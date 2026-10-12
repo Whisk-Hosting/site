@@ -1,0 +1,38 @@
+{
+  "name": "whisk-cms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The website's pages, menus and media: Payload, edited at /cms.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "start": "next start",
+    "payload": "payload",
+    "migrate": "payload migrate",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.90.2",
+    "@payloadcms/next": "3.90.2",
+    "@payloadcms/plugin-cloud-storage": "3.90.2",
+    "@payloadcms/richtext-lexical": "3.90.2",
+    "graphql": "16.14.2",
+    "jsdom": "^30.1.2",
+    "next": "16.3.8",
+    "payload": "3.90.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3"
+  }
+}

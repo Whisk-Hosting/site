@@ -1,0 +1,24 @@
+---
+// A picture from the CMS's media, at the width the layout shows it (the edge resizes it).
+import type { Media } from "../lib/cms"
+import { picture } from "../lib/format"
+
+type Props = { media?: Media | number | null; width: number; eager?: boolean; class?: string }
+const { media, width, eager = false, class: className } = Astro.props
+const m = media && typeof media === "object" ? media : null
+const pic = picture(m?.url, width)
+const height = m?.width && m?.height ? Math.round((width * m.height) / m.width) : undefined
+---
+{pic && (
+  <img
+    class={className}
+    src={pic.src}
+    srcset={pic.srcset}
+    alt={m?.alt ?? ""}
+    width={width}
+    height={height}
+    loading={eager ? "eager" : "lazy"}
+    decoding="async"
+    fetchpriority={eager ? "high" : "auto"}
+  />
+)}

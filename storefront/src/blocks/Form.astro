@@ -1,0 +1,28 @@
+---
+// A form posting to /forms/<name>, where the app's server keeps each entry and returns
+// here with ?sent=<name>. The edge's challenge keeps robots out; whisk-forms.js solves it.
+import type { Block } from "../lib/cms"
+type Props = { block: Block; first?: boolean }
+const { block: b } = Astro.props
+const fields: any[] = b.fields ?? []
+const sent = Astro.url.searchParams.get("sent") === b.name
+const id = (f: any) => `${b.name}-${f.name}`
+---
+<section class="block form">
+  {b.heading && <h2>{b.heading}</h2>}
+  {sent ? <p class="notice" role="status">{b.thanks}</p> : (
+    <form method="post" action={`/forms/${b.name}`}>
+      {fields.map((f) => f.type === "checkbox" ? (
+        <label class="choice"><input type="checkbox" id={id(f)} name={f.name} value="yes" required={!!f.required} /> {f.label}</label>
+      ) : (
+        <>
+          <label for={id(f)}>{f.label}</label>
+          {f.type === "textarea"
+            ? <textarea id={id(f)} name={f.name} rows="5" required={!!f.required} />
+            : <input id={id(f)} name={f.name} type={f.type} required={!!f.required} autocomplete={f.type === "email" ? "email" : f.type === "tel" ? "tel" : undefined} />}
+        </>
+      ))}
+      <p style="margin-top:16px"><button type="submit">{b.submit}</button></p>
+    </form>
+  )}
+</section>

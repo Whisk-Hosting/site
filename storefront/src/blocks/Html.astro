@@ -1,0 +1,7 @@
+---
+// Markup drawn as the team wrote it in the editor.
+import type { Block } from "../lib/cms"
+type Props = { block: Block; first?: boolean }
+const { block: b } = Astro.props
+---
+{b.html && <Fragment set:html={b.html} />}

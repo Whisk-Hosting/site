@@ -1,0 +1,25 @@
+whisk: 1
+name: whisk-site
+
+# Every page is public. The business's team edits the site at /app through their Whisk sign-in
+# (the editor checks it on each request). The website's forms (/forms/*) pass the edge's challenge
+# first, so robots cannot fill them.
+routes:
+  public: ["/**"]
+  challenge: ["/forms/*"]
+
+health:
+  path: /health/ready
+  timeout: 60
+
+database: app
+migrate: "node migrate.mjs"
+
+storage: true
+
+env:
+  # The port of this machine the editor (cms/) answers on, inside the app only (server/cms.mjs).
+  CMS_PORT: "9100"
+  # The editor is part of a website, not a shop: it offers no product pages or products block
+  # (cms/src/app.ts).
+  CMS_SHOP: "0"

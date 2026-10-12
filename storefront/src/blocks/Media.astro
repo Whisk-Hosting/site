@@ -1,0 +1,12 @@
+---
+import type { Block } from "../lib/cms"
+import Picture from "./Picture.astro"
+type Props = { block: Block; first?: boolean }
+const { block: b, first } = Astro.props
+const m = b.image && typeof b.image === "object" ? b.image : null
+const video = m?.mimeType?.startsWith("video/")
+---
+<figure class:list={["block media", { wide: b.wide }]}>
+  {video ? <video src={m?.url ?? undefined} controls preload="metadata" /> : <Picture media={b.image} width={b.wide ? 1200 : 800} eager={first} />}
+  {b.caption && <figcaption class="muted">{b.caption}</figcaption>}
+</figure>

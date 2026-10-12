@@ -1,0 +1,20 @@
+/* Inside a shop's admin (/app/pages and beside it, src/admin/Framed.tsx marks it), the admin has
+   its own menu, account and sign-in, so the editor's own are hidden. The menu keeps its place in
+   the editor's grid, at no width. The editor takes the admin's font everywhere. */
+html[data-framed] .template-default,
+html[data-framed] .template-default--nav-open,
+html[data-framed] .template-default--nav-hydrated {
+  grid-template-columns: 0 minmax(0, 1fr) !important;
+}
+html[data-framed] .nav {
+  visibility: hidden;
+}
+html[data-framed] .template-default__nav-toggler-wrapper,
+html[data-framed] .template-default__nav-overlay,
+html[data-framed] .app-header__account,
+html[data-framed] .step-nav__home {
+  display: none !important;
+}
+:root {
+  --font-body: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}

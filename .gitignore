@@ -1,0 +1,9 @@
+node_modules
+dist
+.astro
+.env
+.cache
+.next
+cms/media
+*.tsbuildinfo
+cms/src/payload-types.ts

@@ -1,0 +1,20 @@
+---
+import type { Block } from "../lib/cms"
+import Picture from "./Picture.astro"
+type Props = { block: Block; first?: boolean }
+const { block: b } = Astro.props
+const items: any[] = b.items ?? []
+---
+<section class="block columns">
+  {b.heading && <h2>{b.heading}</h2>}
+  <div class="cols">
+    {items.map((it) => (
+      <div class="col">
+        <Picture media={it.image} width={480} />
+        {it.heading && <h3>{it.heading}</h3>}
+        {it.text && <p>{it.text}</p>}
+        {it.link?.url && it.link?.label && <a href={it.link.url}>{it.link.label}</a>}
+      </div>
+    ))}
+  </div>
+</section>

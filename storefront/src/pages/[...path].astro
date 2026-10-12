@@ -1,0 +1,20 @@
+---
+// The website's pages, from the CMS (cms/src/collections/Pages.ts), at the address each was given.
+// A page asked for without, or with, its last slash is sent to the address it has.
+import Site from "../layouts/Site.astro"
+import Blocks from "../blocks/Blocks.astro"
+import { menus, otherForm, page, pageTitle, reader } from "../lib/cms"
+
+const path = Astro.url.pathname
+const r = reader(Astro.locals.site.cms, Astro.request)
+const found = await page(r, path)
+if (!found) {
+  const other = otherForm(path)
+  const there = other ? await page(r, other) : null
+  if (there) return Astro.redirect(there.path + Astro.url.search, 301)
+  return Astro.rewrite("/404")
+}
+---
+<Site fullTitle={pageTitle(found, (await menus(r)).name?.trim() || Astro.locals.site.name)} description={found.description ?? undefined} image={typeof found.image === "object" ? found.image?.url ?? undefined : undefined} noindex={!!found.noindex || r.preview} head={found.head ?? undefined} preview={r.preview}>
+  <Blocks blocks={found.layout} />
+</Site>

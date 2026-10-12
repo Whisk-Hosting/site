@@ -1,0 +1,32 @@
+{
+  "name": "whisk-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A business's website on Whisk: Astro pages drawn from Payload, in one app.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/site.mjs build",
+    "start": "node server.mjs",
+    "dev": "node scripts/site.mjs dev",
+    "migrate": "node migrate.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && astro check --root storefront",
+    "test": "tsx --test test/*.test.ts cms/test/*.test.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@astrojs/node": "11.1.7",
+    "astro": "7.3.8",
+    "postgres": "3.4.9"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@types/node": "22.20.5",
+    "sharp": "0.35.5",
+    "subset-font": "2.9.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

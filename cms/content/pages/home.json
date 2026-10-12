@@ -1,0 +1,8 @@
+{
+  "title": "Home",
+  "path": "/",
+  "layout": [
+    { "blockType": "hero", "heading": "Welcome" },
+    { "blockType": "content", "html": "<p>Change this page in the editor at /app.</p>" }
+  ]
+}

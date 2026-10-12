@@ -1,0 +1,21 @@
+---
+// A page's blocks from the CMS (cms/src/blocks/), each drawn by the component of its name. A
+// moved website adds its own blocks the same way: a component here, listed below. The products
+// block is a shop's (templates/shop), so a website draws none.
+import type { Block } from "../lib/cms"
+import Hero from "./Hero.astro"
+import Content from "./Content.astro"
+import Media from "./Media.astro"
+import Columns from "./Columns.astro"
+import Form from "./Form.astro"
+import Html from "./Html.astro"
+
+const DRAW: Record<string, any> = { hero: Hero, content: Content, media: Media, columns: Columns, form: Form, html: Html }
+
+type Props = { blocks?: Block[] | null }
+const blocks = (Astro.props.blocks ?? []).filter((b) => DRAW[b.blockType])
+---
+{blocks.map((b, i) => {
+  const Draw = DRAW[b.blockType]
+  return <Draw block={b} first={i === 0} />
+})}

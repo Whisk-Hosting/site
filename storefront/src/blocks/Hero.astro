@@ -1,0 +1,15 @@
+---
+import type { Block } from "../lib/cms"
+import Picture from "./Picture.astro"
+type Props = { block: Block; first?: boolean }
+const { block: b, first } = Astro.props
+const Heading = first ? "h1" : "h2"
+---
+<section class="block hero">
+  <div>
+    <Heading>{b.heading}</Heading>
+    {b.text && <p class="lead">{b.text}</p>}
+    {b.link?.url && b.link?.label && <a class="button" href={b.link.url}>{b.link.label}</a>}
+  </div>
+  <Picture media={b.image} width={720} eager={first} />
+</section>

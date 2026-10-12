@@ -1,0 +1,7 @@
+---
+// Words written in the editor, as the CMS gives them in HTML (content_html).
+import type { Block } from "../lib/cms"
+type Props = { block: Block; first?: boolean }
+const { block: b } = Astro.props
+---
+{b.content_html && <section class="block prose" set:html={b.content_html} />}

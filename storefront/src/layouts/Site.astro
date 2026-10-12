@@ -1,0 +1,70 @@
+---
+// Every page's frame: the header with the site's menu and the footer's columns, both from the
+// CMS's menus, so the team changes them in the editor. A moved website's frame replaces this
+// one's look and keeps its menus from the CMS.
+import "../styles/site.css"
+import { menus as getMenus, PREVIEW_SCRIPT, reader } from "../lib/cms"
+
+type Props = { title?: string; fullTitle?: string; description?: string; canonical?: string; noindex?: boolean; image?: string; head?: string; preview?: boolean; lang?: string }
+const { title, fullTitle: given, description, canonical, noindex, image, head, preview, lang = "en" } = Astro.props
+const site = Astro.locals.site
+const menus = await getMenus(reader(site.cms, Astro.request))
+const name = menus.name?.trim() || site.name
+const fullTitle = given ?? (title ? `${title} | ${name}` : name)
+const url = canonical ?? new URL(Astro.url.pathname, Astro.url).toString()
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={url} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:site_name" content={name} />
+    <meta property="og:url" content={url} />
+    {description && <meta property="og:description" content={description} />}
+    {image && <meta property="og:image" content={image} />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {head && <Fragment set:html={head} />}
+    <slot name="head" />
+    <script is:inline src="/whisk-forms.js" defer></script>
+    {preview && <script is:inline set:html={PREVIEW_SCRIPT} />}
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">{name}</a>
+        {(menus.header ?? []).length > 0 && (
+          <nav class="menu" aria-label="Menu">
+            {(menus.header ?? []).map((l) => <a href={l.url}>{l.label}</a>)}
+          </nav>
+        )}
+      </div>
+    </header>
+    <main id="main">
+      <div class="wrap">
+        <slot />
+      </div>
+    </main>
+    <footer class="foot">
+      {(menus.columns ?? []).length > 0 && (
+        <div class="wrap foot-cols">
+          {(menus.columns ?? []).map((c) => (
+            <nav aria-label={c.heading ?? undefined}>
+              {c.heading && <h2>{c.heading}</h2>}
+              {(c.links ?? []).map((l) => <a href={l.url}>{l.label}</a>)}
+            </nav>
+          ))}
+        </div>
+      )}
+      {menus.note && <div class="wrap"><p class="muted">{menus.note}</p></div>}
+      <div class="wrap">
+        <span>© {new Date().getFullYear()} {name}</span>
+      </div>
+    </footer>
+  </body>
+</html>
