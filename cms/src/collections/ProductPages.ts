@@ -6,6 +6,7 @@ import { inShop } from "../app"
 import { productBlocks } from "../blocks"
 import { publishedOrStaff, staff } from "../access"
 import { previewUrl } from "../preview"
+import { editedBy } from "../edited"
 
 export const ProductPages: CollectionConfig = {
   slug: "product-pages",
@@ -22,5 +23,6 @@ export const ProductPages: CollectionConfig = {
   fields: [
     { name: "handle", type: "text", required: true, unique: true, index: true, validate: (v: unknown) => (typeof v === "string" && /^[a-z0-9][a-z0-9-]*$/.test(v)) || "The product's handle in the shop admin." },
     { name: "layout", type: "blocks", blocks: productBlocks },
+    editedBy,
   ],
 }

@@ -7,6 +7,7 @@ import { altFrom, fileRefs, insideContent, isFileRef, mimeOf, resolved } from ".
 import { platformUploads, poolFrom, secretFrom } from "../src/settings"
 import { isStaff, personFrom } from "../src/whisk"
 import { keepingHrefs, keptHref } from "../src/links"
+import { editorName } from "../src/edited"
 
 test("a page may have any address but the server's, and in a shop the shop's", () => {
   for (const shop of [true, false]) {
@@ -81,11 +82,38 @@ test("the CMS's settings come from the app's environment", () => {
 test("the business's team may edit the site, a guest or customer may not", () => {
   const h = (o: Record<string, string>) => new Headers(o)
   const team = { "x-whisk-user-id": "u1", "x-whisk-email": "JANE@EXAMPLE.COM", "x-whisk-name": "Jane", "x-whisk-audience": "team", "x-whisk-roles": "owner" }
-  assert.deepEqual(personFrom(h(team)), { id: "u1", email: "jane@example.com", name: "Jane", audience: "team", roles: ["owner"] })
+  assert.deepEqual(personFrom(h(team)), { id: "u1", email: "jane@example.com", name: "Jane", audience: "team", roles: ["owner"], agent: null })
   assert.equal(isStaff(personFrom(h(team))), true)
   assert.equal(isStaff(personFrom(h({ ...team, "x-whisk-roles": "guest" }))), false)
   assert.equal(isStaff(personFrom(h({ ...team, "x-whisk-audience": "customer" }))), false)
   assert.equal(isStaff(personFrom(h({}))), false)
+})
+
+test("an agent acting for someone on the team is that person, with the agent beside them", () => {
+  const h = (o: Record<string, string>) => new Headers(o)
+  const team = { "x-whisk-user-id": "u1", "x-whisk-email": "jane@example.com", "x-whisk-name": "Jane", "x-whisk-audience": "team", "x-whisk-roles": "owner" }
+  const p = personFrom(h({ ...team, "x-whisk-agent": "Claude", "x-whisk-agent-id": "01JAGENT0000000000000000AA" }))
+  assert.deepEqual(p.agent, { id: "01JAGENT0000000000000000AA", name: "Claude" })
+  assert.equal(p.id, "u1")
+  assert.equal(isStaff(p), true)
+  assert.equal(isStaff(personFrom(h({ ...team, "x-whisk-roles": "guest", "x-whisk-agent": "Claude", "x-whisk-agent-id": "01J" }))), false)
+  assert.equal(personFrom(h({ ...team, "x-whisk-agent-id": "01J" })).agent, null)
+})
+
+test("each change names who made it: the person, or the agent for the person", () => {
+  const claude = { id: "01J", name: "Claude" }
+  const cases: [Parameters<typeof editorName>[0], string | undefined][] = [
+    [{ name: "Jane Doe", email: "jane@example.com" }, "Jane Doe"],
+    [{ name: "", email: "jane@example.com" }, "jane@example.com"],
+    [{ name: "  ", email: "jane@example.com", agent: null }, "jane@example.com"],
+    [{ name: "Jane Doe", email: "jane@example.com", agent: claude }, "Claude for Jane Doe"],
+    [{ name: null, email: "jane@example.com", agent: claude }, "Claude for jane@example.com"],
+    [{ name: "", email: "", agent: claude }, "Claude"],
+    [{ name: "", email: "" }, undefined],
+    [null, undefined],
+    [undefined, undefined],
+  ]
+  for (const [user, want] of cases) assert.equal(editorName(user), want, JSON.stringify(user))
 })
 
 test("a link keeps the address written, with spaces escaped", () => {

@@ -117,7 +117,10 @@ sign-in; nobody has a password. It needs about 300 MB of memory.
 
 A page is a list of blocks (hero, text, picture, columns, form, HTML) at an address; drafts are
 seen only by the team, in a preview beside the editor that follows the edit. A form block posts
-to `/forms/<name>`, kept in the database's `form_entries` table. Old addresses go in
+to `/forms/<name>`, kept in the database's `form_entries` table. A coding agent edits the pages
+through Payload's API at `/cms/api` on the site's address, with its Whisk credential
+(`Authorization: Bearer $WHISK_TOKEN`), as the person it works for; each version of a page
+records who made it, as "Claude for Jane Doe" for an agent's change. Old addresses go in
 `redirects.json` (`{"from": "/old", "to": "/new"}`, or `"status": 410` for a page that is gone),
 other sitemap addresses in `sitemaps.json` (`["/sitemap_index.xml"]`), and a `robots.txt` beside
 `whisk.yaml` is served as it is. Starting content goes in `cms/content/` and is added once, never

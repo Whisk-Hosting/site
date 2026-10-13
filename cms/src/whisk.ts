@@ -1,20 +1,26 @@
 // Whisk for the CMS: who is signed in (CONTRACT.md §4) and the platform's uploads (§8), the same
 // rules as the shop's own (../src/lib/staff.ts, ../src/lib/whisk.ts). Every call has a deadline.
 
-export type Person = { id: string; email: string; name: string; audience: string; roles: string[] }
+// An agent is a coding agent reaching the site as the person it acts for.
+export type Agent = { id: string; name: string }
+
+export type Person = { id: string; email: string; name: string; audience: string; roles: string[]; agent: Agent | null }
 
 type HeaderSource = { get(name: string): string | null }
 
 // The edge sets these on every request and strips any a browser sends, so they say who is here.
+// On an agent's request they are the person's, with the agent's name and id beside them.
 export const personFrom = (h: HeaderSource): Person => ({
   id: h.get("x-whisk-user-id") ?? "",
   email: (h.get("x-whisk-email") ?? "").toLowerCase(),
   name: h.get("x-whisk-name") ?? "",
   audience: h.get("x-whisk-audience") ?? "",
   roles: (h.get("x-whisk-roles") ?? "").split(",").map((r) => r.trim()).filter(Boolean),
+  agent: h.get("x-whisk-agent") ? { id: h.get("x-whisk-agent-id") ?? "", name: h.get("x-whisk-agent") ?? "" } : null,
 })
 
 // Who may edit the site: anyone on the business's team except a guest, as for the shop's admin.
+// An agent may whenever the person it acts for may.
 export const isStaff = (p: Person) => p.audience === "team" && !!p.id && !!p.email && p.roles.some((r) => r !== "guest")
 
 const platformUrl = () => (process.env.WHISK_QUEUE_URL ?? "").replace(/\/events$/, "")

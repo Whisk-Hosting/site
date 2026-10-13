@@ -7,6 +7,7 @@ import { pageBlocks } from "../blocks"
 import { publishedOrStaff, staff } from "../access"
 import { pathProblem } from "../paths"
 import { previewUrl } from "../preview"
+import { editedBy } from "../edited"
 
 export const Pages: CollectionConfig = {
   slug: "pages",
@@ -54,5 +55,6 @@ export const Pages: CollectionConfig = {
         },
       ],
     },
+    editedBy,
   ],
 }

@@ -3,6 +3,7 @@
 import type { Field, GlobalConfig } from "payload"
 import { anyone, staff } from "../access"
 import { inShop } from "../app"
+import { editedBy } from "../edited"
 
 const links = (name: string, maxRows: number): Field => ({
   name,
@@ -41,5 +42,6 @@ export const Menus: GlobalConfig = {
         },
       ],
     },
+    editedBy,
   ],
 }

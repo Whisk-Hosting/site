@@ -1,6 +1,7 @@
 // The people who edit the site: the business's own Whisk team. Nobody has a password here. Whisk's
 // edge says who is signed in (src/whisk.ts), and a team member is given a user the first time they
-// open /cms, kept up to date with their name and email.
+// open /cms, kept up to date with their name and email. An agent acting for a person signs in as
+// that person's user, with the agent beside it for the request (src/edited.ts records both).
 import type { AuthStrategy, CollectionConfig, Payload } from "payload"
 import { isStaff, personFrom, type Person } from "../whisk"
 import { nobody, staff } from "../access"
@@ -25,7 +26,7 @@ export const whiskSignIn: AuthStrategy = {
     const p = personFrom(headers)
     if (!isStaff(p)) return { user: null }
     const user = await userFor(payload, p)
-    return { user: { ...user, collection: "users", _strategy: "whisk" } }
+    return { user: { ...user, agent: p.agent, collection: "users", _strategy: "whisk" } }
   },
 }
 
