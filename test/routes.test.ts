@@ -1,7 +1,7 @@
 // The website's server decisions (server/routes.mjs) and the pages' helpers (storefront/src/lib/format.ts).
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { accepts, anyFilled, CMS, formFields, formName, formReturn, isAdmin, isEditorPage, isStaff, redirectFor, signIn, sitemapFor, staticFile, variant } from "../server/routes.mjs"
+import { accepts, anyFilled, CMS, editorFor, editPath, formFields, formName, formReturn, isAdmin, isEditLink, isEditorPage, isStaff, pageQuery, redirectFor, signIn, sitemapFor, staticFile, variant } from "../server/routes.mjs"
 import { forwardHeaders, restartDelay } from "../server/cms.mjs"
 import { picture, robotsTxt, sitemap } from "../storefront/src/lib/format"
 
@@ -86,4 +86,29 @@ test("pictures, the sitemap and robots.txt", () => {
   assert.equal(sitemap("https://example.com", [{ path: "/a&b/", updated: "2026-10-10T00:00:00Z" }]).includes("<loc>https://example.com/a&amp;b/</loc><lastmod>2026-10-10T00:00:00.000Z</lastmod>"), true)
   assert.equal(robotsTxt("https://example.com", "User-agent: *\nDisallow:\n"), "User-agent: *\nDisallow:\n")
   assert.equal(robotsTxt("https://example.com", undefined), "User-agent: *\nDisallow: /app\nDisallow: /cms\n\nSitemap: https://example.com/sitemap.xml\n")
+})
+
+test("the Whisk bar's Edit page opens the editor at the page with that path", () => {
+  assert.equal(isEditLink("/cms/edit"), true)
+  assert.equal(isEditLink("/cms/editx"), false)
+  const asked: [string, string][] = [
+    ["?path=%2Fabout%2F", "/about/"],
+    ["?path=/services/repairs", "/services/repairs"],
+    ["", "/"],
+    ["?path=about", "/"],
+    ["?path=%2F%2Fevil.example", "/"],
+    ["?path=%2Fa%23b", "/"],
+  ]
+  for (const [search, want] of asked) assert.equal(editPath(search), want, search)
+
+  const paths = (q: URLSearchParams) => [...q.entries()].filter(([k]) => k.startsWith("where")).map(([, v]) => v)
+  assert.deepEqual(paths(pageQuery("/")), ["/"])
+  assert.deepEqual(paths(pageQuery("/about/")), ["/about/", "/about"])
+  assert.deepEqual(paths(pageQuery("/caf%C3%A9")), ["/caf%C3%A9", "/caf%C3%A9/", "/café", "/café/"])
+  assert.deepEqual(paths(pageQuery("/100%")), ["/100%", "/100%/"])
+  assert.equal(pageQuery("/").get("draft"), "true")
+
+  assert.equal(editorFor({ id: 7 }), "/cms/collections/pages/7")
+  assert.equal(editorFor(null), "/cms/collections/pages")
+  assert.equal(editorFor({}), "/cms/collections/pages")
 })

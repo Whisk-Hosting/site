@@ -8,6 +8,12 @@ routes:
   public: ["/**"]
   challenge: ["/forms/*"]
 
+# The business's own admin, which the Whisk bar links for its team: the editor, and the editor
+# opened at the page being looked at (server.mjs).
+admin:
+  path: /app
+  edit: "/cms/edit?path={path}"
+
 health:
   path: /health/ready
   timeout: 60

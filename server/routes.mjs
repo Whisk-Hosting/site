@@ -137,3 +137,28 @@ export const formReturn = (referer, name) => {
 
 // An error answered as the platform's errors are (contract/errors.md): a code, a sentence and a fix.
 export const errorBody = (code, message, fix) => JSON.stringify({ error: { code, message, fix } })
+
+// The page editor's address (whisk.yaml's admin.edit, CONTRACT.md §3.1): /cms/edit?path=<a
+// page's path>, which the Whisk bar's Edit page links to. The editor is opened at the page that
+// path shows, or at the list of pages when no page has it. These say which path was asked for
+// (the site's home when it is not one), the editor's API query that finds its page, in either
+// form of the address and as written or decoded, and where the editor opens for what it found.
+export const isEditLink = (path) => path === "/cms/edit"
+export const editPath = (search) => {
+  const p = new URLSearchParams(search).get("path") ?? ""
+  return p.startsWith("/") && !p.startsWith("//") && p.length <= 2000 && !/[\s#?\\]/.test(p) ? p : "/"
+}
+export const pageQuery = (path) => {
+  const forms = (p) => (p === "/" ? [p] : [p, p.endsWith("/") ? p.slice(0, -1) : `${p}/`])
+  let decoded = path
+  try {
+    decoded = decodeURIComponent(path)
+  } catch {
+    // a path that is not valid percent-encoding is looked up only as written
+  }
+  const paths = [...new Set([...forms(path), ...forms(decoded)])]
+  const q = new URLSearchParams({ depth: "0", limit: "1", draft: "true" })
+  paths.forEach((p, i) => q.set(`where[or][${i}][path][equals]`, p))
+  return q
+}
+export const editorFor = (found) => (found && found.id !== undefined && found.id !== null ? `/cms/collections/pages/${encodeURIComponent(String(found.id))}` : "/cms/collections/pages")

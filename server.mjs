@@ -2,7 +2,8 @@
 // site is. In order, a request is:
 // - /health/ready, the platform's health check: the database and the editor answer;
 // - a form post to /forms/<name>, kept in the form_entries table;
-// - /app, the admin, which is the editor, for the business's team (Whisk's sign-in);
+// - /app, the admin, which is the editor, for the business's team (Whisk's sign-in), and
+//   /cms/edit?path=, the editor opened at the page with that path (the Whisk bar's Edit page);
 // - /cms and /_next, the editor (Payload, cms/) and its files, which this server starts beside it
 //   (server/cms.mjs): its pages for the team, its API for anyone, deciding itself what each may do;
 // - an old address of a moved website (redirects.json), in one hop;
@@ -13,7 +14,7 @@ import { createServer } from "node:http"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { CMS_PORT, cmsAddress, cmsReady, proxy, startCms, stopCms } from "./server/cms.mjs"
-import { anyFilled, CMS, errorBody, formFields, formName, formReturn, isAdmin, isEditorPage, isStaff, redirectFor, signIn, sitemapFor, staticFile, variant } from "./server/routes.mjs"
+import { anyFilled, CMS, editorFor, editPath, errorBody, formFields, formName, formReturn, isAdmin, isEditLink, isEditorPage, isStaff, pageQuery, redirectFor, signIn, sitemapFor, staticFile, variant } from "./server/routes.mjs"
 
 const here = import.meta.dirname
 const port = Number(process.env.PORT ?? 8080)
@@ -101,6 +102,21 @@ const formPost = async (req, res, form) => {
   res.writeHead(303, { location: formReturn(referer, form) }).end()
 }
 
+// The page, published or draft, that a path shows, asked of the editor's API as the person here
+// (it shows drafts to the team only, cms/src/access.ts); null when none has it or the editor
+// cannot answer, so the editor opens at its list of pages instead.
+const IDENTITY = ["x-whisk-user-id", "x-whisk-email", "x-whisk-name", "x-whisk-audience", "x-whisk-roles"]
+const findPage = async (req, path) => {
+  const headers = Object.fromEntries(IDENTITY.filter((h) => typeof req.headers[h] === "string").map((h) => [h, req.headers[h]]))
+  try {
+    const res = await fetch(`${cmsAddress()}/cms/api/pages?${pageQuery(path)}`, { headers: { accept: "application/json", ...headers }, signal: AbortSignal.timeout(5_000) })
+    if (!res.ok) return null
+    return (await res.json())?.docs?.[0] ?? null
+  } catch {
+    return null
+  }
+}
+
 const exists = (f) => {
   try {
     return statSync(f).isFile()
@@ -135,6 +151,10 @@ const handle = async (req, res) => {
   const form = formName(pathname)
   if (form && req.method === "POST") return formPost(req, res, form)
   if (isAdmin(pathname)) return res.writeHead(302, { location: isStaff(req.headers) ? "/cms" : signIn("/cms"), "cache-control": "no-store" }).end()
+  if (isEditLink(pathname)) {
+    if (!isStaff(req.headers)) return res.writeHead(302, { location: signIn(url), "cache-control": "no-store" }).end()
+    return res.writeHead(302, { location: editorFor(await findPage(req, editPath(search))), "cache-control": "no-store" }).end()
+  }
   if (CMS.test(pathname)) {
     if (isEditorPage(pathname) && !isStaff(req.headers)) return res.writeHead(302, { location: signIn(url), "cache-control": "no-store" }).end()
     return proxy(req, res, url)
