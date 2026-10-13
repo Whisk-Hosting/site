@@ -6,6 +6,7 @@ import { pathProblem } from "../src/paths"
 import { altFrom, fileRefs, insideContent, isFileRef, mimeOf, resolved } from "../src/content"
 import { platformUploads, poolFrom, secretFrom } from "../src/settings"
 import { isStaff, personFrom } from "../src/whisk"
+import { keepingHrefs, keptHref } from "../src/links"
 
 test("a page may have any address but the server's, and in a shop the shop's", () => {
   for (const shop of [true, false]) {
@@ -85,4 +86,23 @@ test("the business's team may edit the site, a guest or customer may not", () =>
   assert.equal(isStaff(personFrom(h({ ...team, "x-whisk-roles": "guest" }))), false)
   assert.equal(isStaff(personFrom(h({ ...team, "x-whisk-audience": "customer" }))), false)
   assert.equal(isStaff(personFrom(h({}))), false)
+})
+
+test("a link keeps the address written, with spaces escaped", () => {
+  const cases: [unknown, unknown][] = [
+    ["#", "#"],
+    ["javascript:void(0)", "javascript:void(0)"],
+    ["/products/a,b", "/products/a,b"],
+    ["/uploads/Price List.pdf", "/uploads/Price%20List.pdf"],
+    [" https://example.com/ ", "https://example.com/"],
+    [undefined, undefined],
+    [null, null],
+  ]
+  for (const [value, want] of cases) assert.equal(keptHref(value), want, String(value))
+  const url = { name: "url", type: "text", hooks: { beforeChange: [() => "%23"] } } as never
+  const newTab = { name: "newTab", type: "checkbox" } as never
+  const [kept, other] = keepingHrefs({ defaultFields: [url, newTab] }) as { name: string; hooks?: { beforeChange?: unknown[]; beforeValidate?: ((a: { value: unknown }) => unknown)[] } }[]
+  assert.deepEqual(kept!.hooks!.beforeChange, [], "the encoding hook is gone")
+  assert.equal(kept!.hooks!.beforeValidate![0]!({ value: "#" }), "#")
+  assert.equal(other, newTab)
 })

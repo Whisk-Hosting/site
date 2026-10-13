@@ -7,7 +7,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { buildConfig } from "payload"
 import { postgresAdapter } from "@payloadcms/db-postgres"
-import { lexicalEditor } from "@payloadcms/richtext-lexical"
+import { lexicalEditor, LinkFeature } from "@payloadcms/richtext-lexical"
 import { cloudStoragePlugin } from "@payloadcms/plugin-cloud-storage"
 import sharp from "sharp"
 import { Users } from "./src/collections/Users"
@@ -16,6 +16,7 @@ import { Pages } from "./src/collections/Pages"
 import { ProductPages } from "./src/collections/ProductPages"
 import { Menus } from "./src/globals/Navigation"
 import { importContent } from "./src/import"
+import { keepingHrefs } from "./src/links"
 import { platformUploads, poolFrom, publicUrlFrom, secretFrom } from "./src/settings"
 import { whiskUploads } from "./src/uploads"
 
@@ -43,7 +44,8 @@ export default buildConfig({
   },
   collections: [Pages, ProductPages, Media, Users],
   globals: [Menus],
-  editor: lexicalEditor(),
+  // Links keep the address written (src/links.ts says why).
+  editor: lexicalEditor({ features: ({ defaultFeatures }) => defaultFeatures.map((f) => (f.key === "link" ? LinkFeature({ fields: keepingHrefs }) : f)) }),
   db: postgresAdapter({
     pool: { ...poolFrom(env.DATABASE_URL ?? "postgres://localhost/app"), max: 5, connectionTimeoutMillis: 10_000, idleTimeoutMillis: 30_000 },
     schemaName: "cms",
