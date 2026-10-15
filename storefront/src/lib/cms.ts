@@ -16,6 +16,7 @@ export type Page = {
   noindex?: boolean | null
   head?: string | null
   layout?: Block[] | null
+  market?: string | null // the one market's site the page is for; every site's when empty
   updatedAt?: string
 }
 // A page's whole <title>: the one it was given for search results, as a moved page had it, or its
@@ -48,17 +49,25 @@ const keep = (key: string, value: unknown) => {
 // the team (cms/src/access.ts).
 const IDENTITY = ["x-whisk-user-id", "x-whisk-email", "x-whisk-name", "x-whisk-audience", "x-whisk-roles"]
 
-export type Reader = { base: string; request: Request; preview: boolean }
+// market: the market whose site is asked for, in a shop that sells in several (its own page at an
+// address is shown instead of the one for every site); null otherwise.
+export type Reader = { base: string; request: Request; preview: boolean; market: string | null }
 
 // A preview is asked for with ?preview=1 and shown only to the business's team (as Whisk's edge
 // says, cms/src/whisk.ts); anyone else gets the published page.
 const onTeam = (h: Headers) => h.get("x-whisk-audience") === "team" && !!h.get("x-whisk-user-id") && (h.get("x-whisk-roles") ?? "").split(",").some((r) => r.trim() && r.trim() !== "guest")
 
-export const reader = (base: string, request: Request): Reader => ({
+export const reader = (base: string, request: Request, market: string | null = null): Reader => ({
   base,
   request,
   preview: new URL(request.url).searchParams.get("preview") === "1" && onTeam(request.headers),
+  market,
 })
+
+// Of the pages at one address, the one a market's site shows: its own, else the one for every
+// site; never another market's.
+export const forSite = <T extends { market?: string | null }>(docs: readonly T[], market: string | null): T | null =>
+  docs.find((d) => market && d.market === market) ?? docs.find((d) => !d.market) ?? null
 
 const ask = async <T>(r: Reader, path: string, params: Record<string, string>): Promise<T> => {
   const q = new URLSearchParams({ ...params, ...(r.preview ? { draft: "true" } : {}) })
@@ -85,7 +94,7 @@ const ask = async <T>(r: Reader, path: string, params: Record<string, string>): 
 type List<T> = { docs: T[]; hasNextPage: boolean }
 
 export const page = async (r: Reader, path: string): Promise<Page | null> =>
-  (await ask<List<Page>>(r, "pages", { "where[path][equals]": path, depth: "2", limit: "1" })).docs[0] ?? null
+  forSite((await ask<List<Page>>(r, "pages", { "where[path][equals]": path, depth: "2", limit: "10" })).docs, r.market)
 
 export const productPage = async (r: Reader, handle: string): Promise<ProductPage | null> =>
   (await ask<List<ProductPage>>(r, "product-pages", { "where[handle][equals]": handle, depth: "2", limit: "1" })).docs[0] ?? null
@@ -93,24 +102,26 @@ export const productPage = async (r: Reader, handle: string): Promise<ProductPag
 // The menus, or none when the CMS cannot say: a page still draws without them.
 export const menus = async (r: Reader): Promise<Menus> => ask<Menus>(r, "globals/menus", { depth: "0" }).catch(() => ({}))
 
-// Every published page that search engines may list, for the sitemap.
-type Listed = { path: string; noindex?: boolean | null; updatedAt?: string }
+// Every published page that search engines may list on this site, for the sitemap.
+type Listed = { path: string; noindex?: boolean | null; market?: string | null; updatedAt?: string }
 export const listedPages = async (r: Reader): Promise<Listed[]> => {
   const out: Listed[] = []
   for (let n = 1; n <= 50; n++) {
     const got = await ask<List<Listed>>(r, "pages", {
       "select[path]": "true",
       "select[noindex]": "true",
+      "select[market]": "true",
       "select[updatedAt]": "true",
       depth: "0",
       limit: "200",
       page: String(n),
       sort: "path",
     })
-    out.push(...got.docs.filter((d) => !d.noindex))
+    out.push(...got.docs)
     if (!got.hasNextPage) break
   }
-  return out
+  const paths = [...new Set(out.map((d) => d.path))]
+  return paths.map((p) => forSite(out.filter((d) => d.path === p), r.market)).filter((d): d is Listed => !!d && !d.noindex)
 }
 
 // The other form of an address, with or without its last slash: a page is found at either, and

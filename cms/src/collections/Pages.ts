@@ -2,7 +2,7 @@
 // its blocks (../storefront/src/pages/[...path].astro). Drafts are seen only by the team, in the
 // preview beside the editor.
 import type { CollectionConfig } from "payload"
-import { inShop } from "../app"
+import { inShop, MARKET_OPTIONS, markets } from "../app"
 import { pageBlocks } from "../blocks"
 import { publishedOrStaff, staff } from "../access"
 import { pathProblem } from "../paths"
@@ -17,6 +17,9 @@ export const Pages: CollectionConfig = {
     livePreview: { url: ({ data, req }) => previewUrl(req, typeof data?.path === "string" ? data.path : "/") },
     preview: (doc, { req }) => previewUrl(req, typeof doc?.path === "string" ? doc.path : "/"),
   },
+  // One page per address on each site: a page for every site, and one for a market's own site
+  // (market) beside it, which that site shows instead.
+  indexes: [{ fields: ["path", "market"], unique: true }],
   versions: { drafts: { autosave: { interval: 1500 } }, maxPerDoc: 50 },
   access: { read: publishedOrStaff, create: staff, update: staff, delete: staff },
   fields: [
@@ -26,10 +29,31 @@ export const Pages: CollectionConfig = {
       label: "Address",
       type: "text",
       required: true,
-      unique: true,
       index: true,
       defaultValue: "/",
-      validate: (v: unknown) => (typeof v === "string" ? (pathProblem(v) ?? true) : "An address starts with /."),
+      validate: async (v: unknown, { req, id, siblingData }: { req: any; id?: string | number; siblingData?: { market?: string | null } }) => {
+        if (typeof v !== "string") return "An address starts with /."
+        const problem = pathProblem(v)
+        if (problem) return problem
+        const market = siblingData?.market || null
+        const taken = await req.payload.find({
+          collection: "pages",
+          where: { and: [{ path: { equals: v } }, market ? { market: { equals: market } } : { market: { exists: false } }, ...(id ? [{ id: { not_equals: id } }] : [])] },
+          limit: 1,
+          depth: 0,
+          overrideAccess: true,
+          req,
+        })
+        return taken.docs.length ? `Another page has the address ${v}.` : true
+      },
+    },
+    {
+      // The site the page is for, in a shop that sells in several markets; empty is every site.
+      name: "market",
+      label: "Only on",
+      type: "select",
+      options: MARKET_OPTIONS,
+      admin: { position: "sidebar", hidden: markets().length < 2 },
     },
     {
       type: "tabs",

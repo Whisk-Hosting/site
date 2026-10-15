@@ -45,7 +45,9 @@ export const importContent = async (payload: Payload, root: string): Promise<voi
     const doc = readJson(file) as Record<string, unknown>
     const value = doc[key]
     if (typeof value !== "string") return payload.logger.warn(`content: ${path.basename(file)} has no ${key}, so it is left out`)
-    const { totalDocs } = await payload.count({ collection, where: { [key]: { equals: value } }, overrideAccess: true })
+    // A page is one per address on each site (src/collections/Pages.ts).
+    const site = key === "path" ? [typeof doc.market === "string" && doc.market ? { market: { equals: doc.market } } : { market: { exists: false } }] : []
+    const { totalDocs } = await payload.count({ collection, where: { and: [{ [key]: { equals: value } }, ...site] } as never, overrideAccess: true })
     if (totalDocs > 0) return
     const data = resolved(doc, await mediaIds(doc), toRichText) as Record<string, unknown>
     await payload.create({ collection, data: { ...data, _status: "published" } as never, overrideAccess: true }).catch((e: Error) => {
