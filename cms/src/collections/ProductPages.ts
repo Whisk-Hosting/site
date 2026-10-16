@@ -12,6 +12,7 @@ export const ProductPages: CollectionConfig = {
   slug: "product-pages",
   labels: { singular: "Product page", plural: "Product pages" },
   admin: {
+    group: "Website",
     useAsTitle: "handle",
     hidden: () => !inShop(),
     defaultColumns: ["handle", "_status", "updatedAt"],

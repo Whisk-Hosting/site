@@ -5,6 +5,7 @@ import type { Payload } from "payload"
 import { convertHTMLToLexical, editorConfigFactory } from "@payloadcms/richtext-lexical"
 import { JSDOM } from "jsdom"
 import { altFrom, fileRefs, insideContent, mimeOf, resolved } from "./content"
+import { keptHrefs } from "./links"
 
 const readJson = (file: string): unknown => JSON.parse(readFileSync(file, "utf8"))
 const jsonIn = (dir: string) => (existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".json")).sort().map((f) => path.join(dir, f)) : [])
@@ -12,7 +13,7 @@ const jsonIn = (dir: string) => (existsSync(dir) ? readdirSync(dir).filter((f) =
 export const importContent = async (payload: Payload, root: string): Promise<void> => {
   if (!existsSync(root)) return
   const editorConfig = await editorConfigFactory.default({ config: payload.config })
-  const toRichText = (html: string) => convertHTMLToLexical({ editorConfig, html, JSDOM })
+  const toRichText = (html: string) => convertHTMLToLexical({ editorConfig, html: keptHrefs(html), JSDOM })
 
   const mediaIds = async (content: unknown) => {
     const ids = new Map<string, number | string>()

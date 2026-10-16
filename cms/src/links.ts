@@ -12,3 +12,7 @@ const keep: FieldHook = ({ value }) => keptHref(value)
 /** The link feature's fields, with the address kept as written rather than encoded. Pure. */
 export const keepingHrefs = ({ defaultFields }: { defaultFields: FieldAffectingData[] }): (Field | FieldAffectingData)[] =>
   defaultFields.map((f) => (f.name === "url" && "hooks" in f ? ({ ...f, hooks: { ...f.hooks, beforeValidate: [keep], beforeChange: [] } } as FieldAffectingData) : f))
+
+/** Every link address in a piece of HTML with its spaces escaped, so starting content written
+ * with "tel:0800 002 182" imports (the field's own hooks do not run for words added in code). Pure. */
+export const keptHrefs = (html: string): string => html.replace(/href="([^"]*)"/g, (_, url: string) => `href="${url.trim().replace(/ /g, "%20")}"`)

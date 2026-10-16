@@ -63,6 +63,10 @@ needs about 300 MB of memory); the free app is too small for it.
 
 - **An editor for the whole team** at `/app`. Everyone in the business signs in with their Whisk
   account, so there are no passwords to share and nobody to add twice.
+- **A dashboard** the editor opens on: pages, enquiries and pictures at a glance, the latest
+  enquiries, and every page with when and by whom it last changed, a step from editing.
+- **Enquiries** from the site's forms in the editor, each opening to all it said, with Reply by
+  email and Call.
 - **Pages built from blocks**: hero, text, picture, columns, form and HTML, in any order, at any
   address.
 - **A live preview** beside the editor that follows each change, drafts only the team can see,
@@ -117,7 +121,9 @@ sign-in; nobody has a password. It needs about 300 MB of memory.
 
 A page is a list of blocks (hero, text, picture, columns, form, HTML) at an address; drafts are
 seen only by the team, in a preview beside the editor that follows the edit. A form block posts
-to `/forms/<name>`, kept in the database's `form_entries` table. A coding agent edits the pages
+to `/forms/<name>`, kept in the database's `form_entries` table. The editor lists them under
+Enquiries, with times in `SITE_TIME_ZONE` (an IANA zone such as `Pacific/Auckland`, set in
+`whisk.yaml`'s `env`; UTC when unset). A coding agent edits the pages
 through Payload's API at `/cms/api` on the site's address, with its Whisk credential
 (`Authorization: Bearer $WHISK_TOKEN`), as the person it works for; each version of a page
 records who made it, as "Claude for Jane Doe" for an agent's change. Old addresses go in

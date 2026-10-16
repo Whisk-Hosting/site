@@ -24,24 +24,28 @@ const richText = (name = "content"): Field[] => [
 
 export const Hero: Block = {
   slug: "hero",
+  admin: { disableBlockName: true },
   interfaceName: "HeroBlock",
   fields: [{ name: "heading", type: "text", required: true }, { name: "text", type: "textarea" }, image(), link()],
 }
 
 export const Content: Block = {
   slug: "content",
+  admin: { disableBlockName: true },
   interfaceName: "ContentBlock",
   fields: richText(),
 }
 
 export const MediaBlock: Block = {
   slug: "media",
+  admin: { disableBlockName: true },
   interfaceName: "MediaBlock",
   fields: [image("image", true), { name: "caption", type: "text" }, { name: "wide", type: "checkbox" }],
 }
 
 export const Columns: Block = {
   slug: "columns",
+  admin: { disableBlockName: true },
   interfaceName: "ColumnsBlock",
   fields: [
     { name: "heading", type: "text" },
@@ -58,6 +62,7 @@ export const Columns: Block = {
 // Products from the shop (Medusa), read live when the page is drawn. Offered only in a shop.
 export const Products: Block = {
   slug: "products",
+  admin: { disableBlockName: true },
   interfaceName: "ProductsBlock",
   fields: [
     { name: "heading", type: "text" },
@@ -80,6 +85,7 @@ export const Products: Block = {
 // A form that posts to /forms/<name>; each entry is kept in the app's form_entries table.
 export const Form: Block = {
   slug: "form",
+  admin: { disableBlockName: true },
   interfaceName: "FormBlock",
   fields: [
     { name: "name", type: "text", required: true, validate: (v: unknown) => (typeof v === "string" && /^[a-z0-9][a-z0-9-]{0,62}$/.test(v)) || "Lower-case letters, digits and dashes, such as contact." },
@@ -110,6 +116,7 @@ export const Form: Block = {
 // Markup drawn as it is: an embed, a map, or a part of a moved page with no block of its own.
 export const Html: Block = {
   slug: "html",
+  admin: { disableBlockName: true },
   interfaceName: "HtmlBlock",
   fields: [{ name: "html", type: "code", required: true, admin: { language: "html" } }],
 }

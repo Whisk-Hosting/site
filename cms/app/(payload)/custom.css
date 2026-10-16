@@ -18,3 +18,56 @@ html[data-framed] .step-nav__home {
 :root {
   --font-body: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+
+/* The dashboard and the enquiries list (src/admin/Dashboard.tsx, Enquiries.tsx). */
+.wd { padding-top: 24px; padding-bottom: 48px; display: grid; gap: 24px; }
+.wd h1 { margin: 0; font-size: 28px; line-height: 1.2; }
+.wd h2 { margin: 0; font-size: 18px; }
+.wd-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.wd-count { font-size: 15px; color: var(--theme-elevation-600); }
+.wd-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.wd-btn { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid var(--theme-elevation-150); background: var(--theme-elevation-0); color: var(--theme-text); text-decoration: none; font-weight: 500; }
+.wd-btn:hover { background: var(--theme-elevation-50); }
+.wd-btn-main { background: var(--theme-elevation-900); border-color: var(--theme-elevation-900); color: var(--theme-elevation-0); }
+.wd-btn-main:hover { background: var(--theme-elevation-750); }
+.wd-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.wd-stat { display: grid; gap: 4px; padding: 16px; border-radius: 8px; border: 1px solid var(--theme-elevation-100); background: var(--theme-elevation-50); color: var(--theme-elevation-700); text-decoration: none; }
+.wd-stat:hover { background: var(--theme-elevation-100); }
+.wd-num { font-size: 32px; font-weight: 600; line-height: 1; color: var(--theme-text); font-variant-numeric: tabular-nums; }
+.wd-panel { border: 1px solid var(--theme-elevation-100); border-radius: 8px; background: var(--theme-elevation-0); overflow: hidden; }
+.wd-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--theme-elevation-100); }
+.wd-panel-head a { color: var(--theme-elevation-700); }
+.wd-list, .wd-entries { list-style: none; margin: 0; padding: 0; }
+.wd-list > li, .wd-entries > li { border-bottom: 1px solid var(--theme-elevation-100); }
+.wd-list > li:last-child { border-bottom: 0; }
+.wd-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.6fr); gap: 12px; align-items: baseline; padding: 12px 16px; color: var(--theme-text); text-decoration: none; cursor: pointer; }
+.wd-row > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wd-row > span, .wd-row > time { color: var(--theme-elevation-600); font-size: 14px; }
+.wd-row:hover { background: var(--theme-elevation-50); }
+.wd-page { display: flex; align-items: center; }
+.wd-page .wd-row { flex: 1; min-width: 0; }
+.wd-view { padding: 12px 16px; color: var(--theme-elevation-700); }
+.wd-path { font-family: var(--font-mono, ui-monospace, monospace); }
+.wd-empty { margin: 0; padding: 16px; color: var(--theme-elevation-600); }
+.wd-entries { border: 1px solid var(--theme-elevation-100); border-radius: 8px; overflow: hidden; }
+.wd-entries > li:last-child { border-bottom: 0; }
+.wd-entries summary { list-style: none; }
+.wd-entries summary::-webkit-details-marker { display: none; }
+.wd-entries details[open] summary { background: var(--theme-elevation-50); }
+.wd-entries details .wd-actions { padding: 0 16px 16px; }
+.wd-fields { display: grid; gap: 10px; margin: 0; padding: 16px; }
+.wd-fields div { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 12px; }
+.wd-fields dt { color: var(--theme-elevation-600); }
+.wd-fields dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.wd-pager { display: flex; justify-content: space-between; align-items: center; }
+.wd-navgroup { margin-top: 16px; }
+.wd-navlabel { display: block; color: var(--theme-elevation-400); font-size: 13px; margin-bottom: 4px; }
+html[data-framed] .wd-navgroup { display: none; }
+@media (max-width: 760px) {
+  .wd-stats { gap: 8px; }
+  .wd-stat { padding: 12px; font-size: 13px; }
+  .wd-num { font-size: 24px; }
+  .wd-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .wd-row > :nth-child(3), .wd-page .wd-row > :nth-child(2) { display: none; }
+  .wd-fields div { grid-template-columns: 1fr; gap: 2px; }
+}

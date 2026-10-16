@@ -8,7 +8,7 @@ import { anyone, staff } from "../access"
 export const Media: CollectionConfig = {
   slug: "media",
   labels: { singular: "File", plural: "Media" },
-  admin: { useAsTitle: "alt", defaultColumns: ["filename", "alt", "updatedAt"] },
+  admin: { group: "Website", useAsTitle: "alt", defaultColumns: ["filename", "alt", "updatedAt"] },
   access: { read: anyone, create: staff, update: staff, delete: staff },
   upload: {
     staticDir: "media",

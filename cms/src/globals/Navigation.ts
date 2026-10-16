@@ -20,6 +20,7 @@ const links = (name: string, maxRows: number): Field => ({
 export const Menus: GlobalConfig = {
   slug: "menus",
   label: "Menu",
+  admin: { group: "Website" },
   access: { read: anyone, update: staff },
   fields: [
     {

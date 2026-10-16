@@ -13,6 +13,7 @@ export const Pages: CollectionConfig = {
   slug: "pages",
   admin: {
     useAsTitle: "title",
+    group: "Website",
     defaultColumns: ["title", "path", "_status", "updatedAt"],
     livePreview: { url: ({ data, req }) => previewUrl(req, typeof data?.path === "string" ? data.path : "/") },
     preview: (doc, { req }) => previewUrl(req, typeof doc?.path === "string" ? doc.path : "/"),

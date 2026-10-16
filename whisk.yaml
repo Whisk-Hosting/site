@@ -29,3 +29,5 @@ env:
   # The editor is part of a website, not a shop: it offers no product pages or products block
   # (cms/src/app.ts).
   CMS_SHOP: "0"
+  # The business's time zone for the times the editor shows, such as enquiries (cms/src/admin/data.ts).
+  SITE_TIME_ZONE: "UTC"

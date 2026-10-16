@@ -34,7 +34,14 @@ export default buildConfig({
     dateFormat: "d MMMM yyyy, h:mm a",
     meta: { titleSuffix: " | Pages" },
     importMap: { baseDir: dirname },
-    components: { providers: ["/src/admin/Framed#Framed"] },
+    components: {
+      providers: ["/src/admin/Framed#Framed"],
+      afterNavLinks: ["/src/admin/EnquiriesLink#EnquiriesLink"],
+      views: {
+        dashboard: { Component: "/src/admin/Dashboard#Dashboard" },
+        enquiries: { Component: "/src/admin/Enquiries#Enquiries", path: "/enquiries" },
+      },
+    },
     livePreview: {
       breakpoints: [
         { label: "Phone", name: "phone", width: 390, height: 844 },

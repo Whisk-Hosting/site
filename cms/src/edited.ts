@@ -18,6 +18,6 @@ export const editedBy: Field = {
   name: "editedBy",
   label: "Last edited by",
   type: "text",
-  admin: { readOnly: true, position: "sidebar" },
+  admin: { readOnly: true, position: "sidebar", condition: (data) => !!data?.editedBy },
   hooks: { beforeChange: [({ req, value }) => editorName(req.user as Editor | null) ?? value] },
 }
