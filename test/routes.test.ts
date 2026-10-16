@@ -4,6 +4,7 @@ import assert from "node:assert/strict"
 import { accepts, anyFilled, CMS, editorFor, editPath, formFields, formName, formReturn, isAdmin, isEditLink, isEditorPage, isStaff, pageQuery, redirectFor, signIn, sitemapFor, staticFile, variant } from "../server/routes.mjs"
 import { forwardHeaders, restartDelay } from "../server/cms.mjs"
 import { picture, robotsTxt, sitemap } from "../storefront/src/lib/format"
+import { encodedForm } from "../storefront/src/lib/cms"
 
 const team = { "x-whisk-user-id": "u1", "x-whisk-email": "jane@example.com", "x-whisk-audience": "team", "x-whisk-roles": "owner" }
 
@@ -111,4 +112,11 @@ test("the Whisk bar's Edit page opens the editor at the page with that path", ()
   assert.equal(editorFor({ id: 7 }), "/cms/collections/pages/7")
   assert.equal(editorFor(null), "/cms/collections/pages")
   assert.equal(editorFor({}), "/cms/collections/pages")
+})
+
+test("a page whose old address was percent-encoded is found by its encoded form", () => {
+  assert.equal(encodedForm("/🍺-tips/"), "/%F0%9F%8D%BA-tips/")
+  assert.equal(encodedForm("/māori/"), "/m%C4%81ori/")
+  assert.equal(encodedForm("/about/"), null)
+  assert.equal(encodedForm("/"), null)
 })

@@ -24,12 +24,19 @@ export type Page = {
 export const pageTitle = (p: { title?: string; searchTitle?: string | null; path?: string }, siteName: string) =>
   p.searchTitle?.trim() || (p.path === "/" || !p.title ? siteName : `${p.title} | ${siteName}`)
 
-export type ProductPage = { handle: string; layout?: Block[] | null }
+// A product page's search details (its Search fields): the whole <title>, the description, and
+// the handle of the product search engines should list in its place (the same product in
+// another size).
+export type ProductPage = { handle: string; layout?: Block[] | null; searchTitle?: string | null; description?: string | null; canonical?: string | null }
 export type Menus = {
   name?: string | null
   header?: { label: string; url: string }[] | null
   columns?: { heading?: string | null; links?: { label: string; url: string }[] | null }[] | null
   note?: string | null
+  // A shop's lists in search results (Shop in search): all products, and each category.
+  productsTitle?: string | null
+  productsDescription?: string | null
+  categories?: { handle: string; searchTitle?: string | null; description?: string | null }[] | null
 }
 
 const FRESH = 15_000 // how long published content is used before asking again
@@ -93,8 +100,14 @@ const ask = async <T>(r: Reader, path: string, params: Record<string, string>): 
 
 type List<T> = { docs: T[]; hasNextPage: boolean }
 
-export const page = async (r: Reader, path: string): Promise<Page | null> =>
+const pageAt = async (r: Reader, path: string): Promise<Page | null> =>
   forSite((await ask<List<Page>>(r, "pages", { "where[path][equals]": path, depth: "2", limit: "10" })).docs, r.market)
+
+// A page by its address, as written or as its old site kept it, percent-encoded.
+export const page = async (r: Reader, path: string): Promise<Page | null> => {
+  const encoded = encodedForm(path)
+  return (await pageAt(r, path)) ?? (encoded ? pageAt(r, encoded) : null)
+}
 
 export const productPage = async (r: Reader, handle: string): Promise<ProductPage | null> =>
   (await ask<List<ProductPage>>(r, "product-pages", { "where[handle][equals]": handle, depth: "2", limit: "1" })).docs[0] ?? null
@@ -127,6 +140,13 @@ export const listedPages = async (r: Reader): Promise<Listed[]> => {
 // The other form of an address, with or without its last slash: a page is found at either, and
 // the visitor sent to the one it was given.
 export const otherForm = (path: string) => (path === "/" ? null : path.endsWith("/") ? path.slice(0, -1) : `${path}/`)
+
+// An address with letters beyond ASCII (an emoji, a macron) as a moved site kept it, percent-encoded;
+// null when it reads the same either way.
+export const encodedForm = (path: string): string | null => {
+  const encoded = encodeURI(path)
+  return encoded === path ? null : encoded
+}
 
 // The script a preview page carries: it tells the editor it is ready and reloads when the draft is
 // saved, so the preview beside the editor follows the edit.

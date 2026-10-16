@@ -57,6 +57,16 @@ test("starting content names files, which become media", () => {
   assert.deepEqual(out.layout[4], { blockType: "quote", quote: { root: "<p>Said</p>" }, cite: "Ana" })
 })
 
+test("starting menus keep the shop's search details as written", () => {
+  const menus = {
+    header: [{ label: "Shop", url: "/products" }],
+    productsTitle: "All our coffee",
+    productsDescription: "Beans roasted this week.",
+    categories: [{ handle: "beans", searchTitle: "Coffee beans", description: "Whole beans." }],
+  }
+  assert.deepEqual(resolved(menus, new Map(), (html) => ({ root: html })), menus)
+})
+
 test("starting content's files stay inside content/", () => {
   assert.equal(insideContent("/srv/cms/content", "media/a.jpg"), "/srv/cms/content/media/a.jpg")
   assert.equal(insideContent("/srv/cms/content", "../payload.config.ts"), null)

@@ -71,7 +71,8 @@ export const Pages: CollectionConfig = {
           fields: [
             // The page's whole <title> when set, as a moved page had it; otherwise its title and the site's name.
             { name: "searchTitle", label: "Title in search results", type: "text" },
-            { name: "description", type: "textarea", maxLength: 300 },
+            // Long enough for the descriptions moved sites wrote, past the 160 characters search results show.
+            { name: "description", type: "textarea", maxLength: 1000 },
             { name: "image", type: "upload", relationTo: "media" },
             { name: "noindex", label: "Hide from search engines", type: "checkbox" },
             // Tags the page keeps from its old site: JSON-LD, hreflang, verification.

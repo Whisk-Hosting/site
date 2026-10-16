@@ -4,8 +4,10 @@
 // are left as the team made them, so starting again never undoes an edit.
 //
 //   content/pages/*.json          {title, path, searchTitle?, description?, noindex?, head?, image?, layout}
-//   content/product-pages/*.json  {handle, layout}
-//   content/menus.json            {name?, header: [{label, url}], columns: [{heading, links}], note}
+//   content/product-pages/*.json  {handle, layout, searchTitle?, description?, canonical?}
+//   content/menus.json            {name?, header: [{label, url}], columns: [{heading, links}], note,
+//                                  productsTitle?, productsDescription?,
+//                                  categories?: [{handle, searchTitle?, description?}]}
 //   content/media/…               the files they name
 //
 // A file is named where a picture goes as {"file": "media/team.jpg", "alt": "The team"} (with no
