@@ -10,7 +10,7 @@
 //
 // A file is named where a picture goes as {"file": "media/team.jpg", "alt": "The team"} (with no
 // alt, the file's name in words), and a content block may give its words as
-// {"blockType": "content", "html": "<p>…</p>"}. Each file is added on its own, so one that cannot
+// {"blockType": "content", "html": "<p>…</p>"}, and any rich-text field as {"html": "<p>…</p>"}. Each file is added on its own, so one that cannot
 // be added is named in the log and leaves the rest as they are.
 // Pure: what to add and how to read it. src/import.ts adds it; test/cms.test.ts tests this.
 import path from "node:path"
@@ -32,10 +32,15 @@ export const fileRefs = (v: unknown): FileRef[] => {
   return [...seen.values()]
 }
 
+// Words for a rich-text field, given as HTML.
+export const isHtmlRef = (v: unknown): v is { html: string } =>
+  !!v && typeof v === "object" && !Array.isArray(v) && typeof (v as { html?: unknown }).html === "string" && Object.keys(v).length === 1
+
 // The content with each file named replaced by its media id, and each block's HTML by the words
 // it holds (toRichText).
 export const resolved = (v: unknown, ids: Map<string, number | string>, toRichText: (html: string) => unknown): unknown => {
   if (isFileRef(v)) return ids.get(v.file) ?? null
+  if (isHtmlRef(v)) return toRichText(v.html)
   if (Array.isArray(v)) return v.map((x) => resolved(x, ids, toRichText))
   if (v && typeof v === "object") {
     const o = v as Record<string, unknown>

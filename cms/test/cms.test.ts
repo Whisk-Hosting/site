@@ -42,6 +42,7 @@ test("starting content names files, which become media", () => {
       { blockType: "columns", items: [{ image: { file: "media/team.jpg", alt: "The team" } }, { image: { file: "media/van.png" } }] },
       { blockType: "content", html: "<p>Words</p>" },
       { blockType: "html", html: "<b>kept</b>" },
+      { blockType: "quote", quote: { html: "<p>Said</p>" }, cite: "Ana" },
     ],
   }
   assert.deepEqual(fileRefs(page).map((r) => r.file), ["media/og.jpg", "media/team.jpg", "media/van.png"])
@@ -53,6 +54,7 @@ test("starting content names files, which become media", () => {
   assert.equal(out.layout[1].items[1].image, null)
   assert.deepEqual(out.layout[2], { blockType: "content", content: { root: "<p>Words</p>" } })
   assert.deepEqual(out.layout[3], { blockType: "html", html: "<b>kept</b>" })
+  assert.deepEqual(out.layout[4], { blockType: "quote", quote: { root: "<p>Said</p>" }, cite: "Ana" })
 })
 
 test("starting content's files stay inside content/", () => {

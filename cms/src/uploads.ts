@@ -15,7 +15,8 @@ export const whiskUploads: Adapter = () => ({
     const id = (doc as { whiskId?: string }).whiskId
     if (id) await hideUpload(id)
   },
-  generateURL: ({ data }) => (data?.whiskId ? mediaPath(data.whiskId, data.mimeType ?? "") : ""),
+  // A file kept on a laptop (no Whisk upload) is served by the editor itself.
+  generateURL: ({ data, filename }) => (data?.whiskId ? mediaPath(data.whiskId, data.mimeType ?? "") : filename ? `/cms/api/media/file/${encodeURIComponent(filename)}` : ""),
   staticHandler: (_req, { doc }) => {
     const d = doc as { whiskId?: string; mimeType?: string } | undefined
     if (!d?.whiskId) return new Response(null, { status: 404 })
