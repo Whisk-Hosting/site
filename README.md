@@ -67,8 +67,10 @@ needs about 300 MB of memory); the free app is too small for it.
   enquiries, and every page with when and by whom it last changed, a step from editing.
 - **Enquiries** from the site's forms in the editor, each opening to all it said, with Reply by
   email and Call.
-- **Pages built from blocks**: hero, text, picture, columns, form and HTML, in any order, at any
-  address.
+- **Pages built from blocks**: hero, text, picture, columns, list, form and HTML, in any order,
+  at any address.
+- **Shared lists** edited once and shown on any page: testimonials, people, questions, locations
+  and logos, each in the order you drag it to.
 - **A live preview** beside the editor that follows each change, drafts only the team can see,
   and every earlier version kept.
 - **Menus, footer and site name** edited in the same place.
@@ -119,7 +121,9 @@ A business's website on Whisk, headless, in one app on one address. Astro draws 
 beside it in the same app. The business's Whisk team edits the site at `/app` with their Whisk
 sign-in; nobody has a password. It needs about 300 MB of memory.
 
-A page is a list of blocks (hero, text, picture, columns, form, HTML) at an address; drafts are
+A page is a list of blocks (hero, text, picture, columns, list, form, HTML) at an address; a list
+block shows one of the shared lists (`cms/src/collections/Lists.ts`): all of it, a topic of it, or
+the entries picked. Drafts are
 seen only by the team, in a preview beside the editor that follows the edit. A form block posts
 to `/forms/<name>`, kept in the database's `form_entries` table. The editor lists them under
 Enquiries, with times in `SITE_TIME_ZONE` (an IANA zone such as `Pacific/Auckland`, set in

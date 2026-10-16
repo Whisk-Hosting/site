@@ -82,6 +82,19 @@ input[type="checkbox"], input[type="radio"] { width: auto; min-height: 0; }
 .cols { display: grid; gap: 24px; }
 .col img { border-radius: var(--radius); margin-bottom: 12px; width: 100%; }
 .form form { max-width: 560px; }
+.quote { margin: 0; padding: 20px; background: var(--paper-soft); border-radius: var(--radius); }
+.quote blockquote { margin: 0 0 12px; font-size: 1.05rem; }
+.quote figcaption { display: flex; gap: 12px; align-items: center; }
+.quote figcaption span { display: grid; }
+.quote .face { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+.list .lead { color: var(--ink-soft); max-width: 70ch; }
+.faqs { max-width: 70ch; }
+.faqs details { border-bottom: 1px solid var(--line); padding: 12px 0; }
+.faqs summary { font-weight: 600; cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.faqs .prose { margin-top: 8px; }
+address { font-style: normal; margin: 0 0 12px; }
+.logos { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 24px 40px; align-items: center; }
+.logos img { max-height: 56px; width: auto; }
 
 /* Footer */
 .foot { border-top: 1px solid var(--line); padding: 24px 0; color: var(--ink-soft); font-size: 14px; }

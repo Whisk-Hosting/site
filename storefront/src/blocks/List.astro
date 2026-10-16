@@ -1,0 +1,77 @@
+---
+// One of the website's shared lists (cms/src/collections/Lists.ts), with the entries the CMS read
+// with the page (entries): testimonials as quotes, people and locations as cards, questions that
+// open to their answers, and a row of logos. A list with no entries draws nothing.
+import type { Block } from "../lib/cms"
+import Picture from "./Picture.astro"
+type Props = { block: Block; first?: boolean }
+const { block: b } = Astro.props
+const entries: any[] = Array.isArray(b.entries) ? b.entries : []
+const lines = (s?: string | null) => (s ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+const tel = (s: string) => `tel:${s.replace(/[^\d+]/g, "")}`
+---
+{entries.length > 0 && (
+  <section class={`block list list-${b.list}`}>
+    {b.heading && <h2>{b.heading}</h2>}
+    {b.intro && <p class="lead">{b.intro}</p>}
+    {b.list === "testimonials" && (
+      <div class="cols">
+        {entries.map((e) => (
+          <figure class="quote">
+            <blockquote><p>{e.quote}</p></blockquote>
+            <figcaption>
+              <Picture media={e.picture} width={64} class="face" />
+              <span><strong>{e.name}</strong>{e.role && <span class="muted">{e.role}</span>}</span>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    )}
+    {b.list === "people" && (
+      <div class="cols">
+        {entries.map((e) => (
+          <article class="col">
+            <Picture media={e.picture} width={480} />
+            <h3>{e.name}</h3>
+            {e.role && <p class="muted">{e.role}</p>}
+            {e.bio && <p>{e.bio}</p>}
+            {e.email && <p><a href={`mailto:${e.email}`}>{e.email}</a></p>}
+            {e.phone && <p><a href={tel(e.phone)}>{e.phone}</a></p>}
+          </article>
+        ))}
+      </div>
+    )}
+    {b.list === "faqs" && (
+      <div class="faqs">
+        {entries.map((e) => (
+          <details>
+            <summary>{e.question}</summary>
+            {e.answer_html && <div class="prose" set:html={e.answer_html} />}
+          </details>
+        ))}
+      </div>
+    )}
+    {b.list === "locations" && (
+      <div class="cols">
+        {entries.map((e) => (
+          <article class="col">
+            <Picture media={e.picture} width={480} />
+            <h3>{e.name}</h3>
+            {lines(e.address).length > 0 && <address>{lines(e.address).map((l, i) => <>{i > 0 && <br />}{l}</>)}</address>}
+            {e.phone && <p><a href={tel(e.phone)}>{e.phone}</a></p>}
+            {e.email && <p><a href={`mailto:${e.email}`}>{e.email}</a></p>}
+            {lines(e.hours).length > 0 && <p class="muted">{lines(e.hours).map((l, i) => <>{i > 0 && <br />}{l}</>)}</p>}
+            {e.map && <p><a href={e.map}>Map</a></p>}
+          </article>
+        ))}
+      </div>
+    )}
+    {b.list === "logos" && (
+      <ul class="logos">
+        {entries.map((e) => (
+          <li>{e.url ? <a href={e.url}><Picture media={e.picture} width={160} /></a> : <Picture media={e.picture} width={160} />}</li>
+        ))}
+      </ul>
+    )}
+  </section>
+)}

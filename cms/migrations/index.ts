@@ -4,6 +4,7 @@ import * as migration_20261010_195919_upload_fields_everywhere from './20261010_
 import * as migration_20261013_062340_edited_by from './20261013_062340_edited_by';
 import * as migration_20261015_041708_pages_per_market from './20261015_041708_pages_per_market';
 import * as migration_20261016_013641_search_details from './20261016_013641_search_details';
+import * as migration_20261016_073751_shared_lists from './20261016_073751_shared_lists';
 
 export const migrations = [
   {
@@ -34,6 +35,11 @@ export const migrations = [
   {
     up: migration_20261016_013641_search_details.up,
     down: migration_20261016_013641_search_details.down,
-    name: '20261016_013641_search_details'
+    name: '20261016_013641_search_details',
+  },
+  {
+    up: migration_20261016_073751_shared_lists.up,
+    down: migration_20261016_073751_shared_lists.down,
+    name: '20261016_073751_shared_lists'
   },
 ];

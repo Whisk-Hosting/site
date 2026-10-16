@@ -14,6 +14,7 @@ import { Users } from "./src/collections/Users"
 import { Media } from "./src/collections/Media"
 import { Pages } from "./src/collections/Pages"
 import { ProductPages } from "./src/collections/ProductPages"
+import { lists } from "./src/collections/Lists"
 import { Menus } from "./src/globals/Navigation"
 import { importContent } from "./src/import"
 import { keepingHrefs } from "./src/links"
@@ -49,7 +50,7 @@ export default buildConfig({
       ],
     },
   },
-  collections: [Pages, ProductPages, Media, Users],
+  collections: [Pages, ProductPages, ...lists, Media, Users],
   globals: [Menus],
   // Links keep the address written (src/links.ts says why).
   editor: lexicalEditor({ features: ({ defaultFeatures }) => defaultFeatures.map((f) => (f.key === "link" ? LinkFeature({ fields: keepingHrefs }) : f)) }),

@@ -7,10 +7,11 @@ import Hero from "./Hero.astro"
 import Content from "./Content.astro"
 import Media from "./Media.astro"
 import Columns from "./Columns.astro"
+import List from "./List.astro"
 import Form from "./Form.astro"
 import Html from "./Html.astro"
 
-const DRAW: Record<string, any> = { hero: Hero, content: Content, media: Media, columns: Columns, form: Form, html: Html }
+const DRAW: Record<string, any> = { hero: Hero, content: Content, media: Media, columns: Columns, list: List, form: Form, html: Html }
 
 type Props = { blocks?: Block[] | null }
 const blocks = (Astro.props.blocks ?? []).filter((b) => DRAW[b.blockType])

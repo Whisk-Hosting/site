@@ -3,7 +3,7 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import { inShop } from "../src/app"
 import { pathProblem } from "../src/paths"
-import { altFrom, fileRefs, insideContent, isFileRef, mimeOf, resolved } from "../src/content"
+import { altFrom, entryList, entryName, entryRefs, fileRefs, insideContent, isEntryRef, isFileRef, LISTS, mimeOf, resolved } from "../src/content"
 import { platformUploads, poolFrom, secretFrom } from "../src/settings"
 import { isStaff, personFrom } from "../src/whisk"
 import { keepingHrefs, keptHref } from "../src/links"
@@ -55,6 +55,24 @@ test("starting content names files, which become media", () => {
   assert.deepEqual(out.layout[2], { blockType: "content", content: { root: "<p>Words</p>" } })
   assert.deepEqual(out.layout[3], { blockType: "html", html: "<b>kept</b>" })
   assert.deepEqual(out.layout[4], { blockType: "quote", quote: { root: "<p>Said</p>" }, cite: "Ana" })
+})
+
+test("starting content names the shared lists' entries, which become their ids", () => {
+  const page = {
+    path: "/",
+    layout: [
+      { blockType: "list", list: "testimonials", show: "picked", testimonials: [{ entry: "testimonials/jane" }, { entry: "testimonials/gone" }, { entry: "testimonials/ana" }] },
+      { blockType: "list", list: "faqs", show: "all", topic: "Fleet" },
+    ],
+  }
+  assert.deepEqual(entryRefs(page), ["testimonials/jane", "testimonials/gone", "testimonials/ana"])
+  assert.equal(isEntryRef({ entry: "faqs/a", extra: 1 }), false)
+  const ids = new Map<string, number>([["testimonials/jane", 4], ["testimonials/ana", 9]])
+  const out = resolved(page, ids, (html) => ({ root: html })) as any
+  assert.deepEqual(out.layout[0].testimonials, [4, 9], "an entry left out leaves the rest, in order")
+  assert.deepEqual(out.layout[1], page.layout[1])
+  for (const [entry, list] of [["testimonials/jane", "testimonials"], ["logos/acme", "logos"], ["posts/x", null], ["faqs", null], ["faqs/a/b", null]] as const) assert.equal(entryList(entry), list, entry)
+  assert.equal(entryName("people", "/srv/cms/content/people/ana-smith.json"), "people/ana-smith")
 })
 
 test("starting menus keep the shop's search details as written", () => {

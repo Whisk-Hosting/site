@@ -4,7 +4,7 @@ import path from "node:path"
 import type { Payload } from "payload"
 import { convertHTMLToLexical, editorConfigFactory } from "@payloadcms/richtext-lexical"
 import { JSDOM } from "jsdom"
-import { altFrom, fileRefs, insideContent, mimeOf, resolved } from "./content"
+import { altFrom, entryList, entryName, entryRefs, fileRefs, insideContent, LISTS, mimeOf, resolved, type ListName } from "./content"
 import { keptHrefs } from "./links"
 
 const readJson = (file: string): unknown => JSON.parse(readFileSync(file, "utf8"))
@@ -42,6 +42,32 @@ export const importContent = async (payload: Payload, root: string): Promise<voi
     return ids
   }
 
+  // The ids of the files and the shared lists' entries a piece of content names, by name.
+  const idsFor = async (content: unknown) => {
+    const ids = await mediaIds(content)
+    for (const entry of entryRefs(content)) {
+      const list = entryList(entry)
+      const [found] = list ? (await payload.find({ collection: list, where: { source: { equals: entry } }, limit: 1, depth: 0, overrideAccess: true })).docs : []
+      if (found) ids.set(entry, found.id)
+      else payload.logger.warn(`content: the entry ${entry} is not in content/, so it is left out`)
+    }
+    // A list of entries with one left out keeps the rest.
+    return ids
+  }
+
+  // An entry of a shared list, added once: one already added (by its file's name) is left as the
+  // team made it.
+  const addEntry = async (list: ListName, file: string) => {
+    const source = entryName(list, file)
+    const { totalDocs } = await payload.count({ collection: list, where: { source: { equals: source } }, overrideAccess: true })
+    if (totalDocs > 0) return
+    const doc = readJson(file)
+    const data = resolved(doc, await idsFor(doc), toRichText) as Record<string, unknown>
+    await payload.create({ collection: list, data: { ...data, source } as never, overrideAccess: true }).catch((e: Error) => {
+      if (!/unique|duplicate/i.test(e.message)) throw e
+    })
+  }
+
   const add = async (collection: "pages" | "product-pages", key: "path" | "handle", file: string) => {
     const doc = readJson(file) as Record<string, unknown>
     const value = doc[key]
@@ -50,7 +76,7 @@ export const importContent = async (payload: Payload, root: string): Promise<voi
     const site = key === "path" ? [typeof doc.market === "string" && doc.market ? { market: { equals: doc.market } } : { market: { exists: false } }] : []
     const { totalDocs } = await payload.count({ collection, where: { and: [{ [key]: { equals: value } }, ...site] } as never, overrideAccess: true })
     if (totalDocs > 0) return
-    const data = resolved(doc, await mediaIds(doc), toRichText) as Record<string, unknown>
+    const data = resolved(doc, await idsFor(doc), toRichText) as Record<string, unknown>
     await payload.create({ collection, data: { ...data, _status: "published" } as never, overrideAccess: true }).catch((e: Error) => {
       // Another server starting at the same time added it first.
       if (!/unique|duplicate/i.test(e.message)) throw e
@@ -62,6 +88,8 @@ export const importContent = async (payload: Payload, root: string): Promise<voi
   const alone = (file: string, work: () => Promise<unknown>) =>
     work().catch((e: Error) => payload.logger.warn(`content: ${path.basename(file)} is left out: ${e.message}`))
 
+  // The lists first, so the pages showing their entries find them.
+  for (const list of LISTS) for (const file of jsonIn(path.join(root, list))) await alone(file, () => addEntry(list, file))
   for (const file of jsonIn(path.join(root, "pages"))) await alone(file, () => add("pages", "path", file))
   for (const file of jsonIn(path.join(root, "product-pages"))) await alone(file, () => add("product-pages", "handle", file))
 
@@ -70,7 +98,7 @@ export const importContent = async (payload: Payload, root: string): Promise<voi
     const current = (await payload.findGlobal({ slug: "menus", depth: 0, overrideAccess: true })) as { updatedAt?: string | null }
     if (!current.updatedAt) {
       const doc = readJson(menus)
-      await payload.updateGlobal({ slug: "menus", data: resolved(doc, await mediaIds(doc), toRichText) as never, overrideAccess: true })
+      await payload.updateGlobal({ slug: "menus", data: resolved(doc, await idsFor(doc), toRichText) as never, overrideAccess: true })
     }
   })
 }
