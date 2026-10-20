@@ -5,6 +5,7 @@ import type { Payload } from "payload"
 import { convertHTMLToLexical, editorConfigFactory } from "@payloadcms/richtext-lexical"
 import { JSDOM } from "jsdom"
 import { altFrom, entryList, entryName, entryRefs, fileRefs, insideContent, LISTS, mimeOf, resolved, type ListName } from "./content"
+import { finishInline, markInline } from "./inline"
 import { keptHrefs } from "./links"
 
 const readJson = (file: string): unknown => JSON.parse(readFileSync(file, "utf8"))
@@ -13,7 +14,11 @@ const jsonIn = (dir: string) => (existsSync(dir) ? readdirSync(dir).filter((f) =
 export const importContent = async (payload: Payload, root: string): Promise<void> => {
   if (!existsSync(root)) return
   const editorConfig = await editorConfigFactory.default({ config: payload.config })
-  const toRichText = (html: string) => convertHTMLToLexical({ editorConfig, html: keptHrefs(html), JSDOM })
+  // Pictures and callouts in the words become the editor's own (src/inline.ts).
+  const toRichText = (html: string, ids: ReadonlyMap<string, number | string>) => {
+    const { html: marked, marks } = markInline(keptHrefs(html), ids)
+    return finishInline(convertHTMLToLexical({ editorConfig, html: marked, JSDOM }), marks, ids)
+  }
 
   const mediaIds = async (content: unknown) => {
     const ids = new Map<string, number | string>()

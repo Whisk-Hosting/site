@@ -7,7 +7,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { buildConfig } from "payload"
 import { postgresAdapter } from "@payloadcms/db-postgres"
-import { lexicalEditor, LinkFeature } from "@payloadcms/richtext-lexical"
+import { BlocksFeature, lexicalEditor, LinkFeature, UploadFeature } from "@payloadcms/richtext-lexical"
 import { cloudStoragePlugin } from "@payloadcms/plugin-cloud-storage"
 import sharp from "sharp"
 import { Users } from "./src/collections/Users"
@@ -18,6 +18,7 @@ import { lists } from "./src/collections/Lists"
 import { Menus } from "./src/globals/Navigation"
 import { importContent } from "./src/import"
 import { keepingHrefs } from "./src/links"
+import { Callout, pictureFields } from "./src/richtext"
 import { platformUploads, poolFrom, publicUrlFrom, secretFrom } from "./src/settings"
 import { whiskUploads } from "./src/uploads"
 
@@ -52,8 +53,16 @@ export default buildConfig({
   },
   collections: [Pages, ProductPages, ...lists, Media, Users],
   globals: [Menus],
-  // Links keep the address written (src/links.ts says why).
-  editor: lexicalEditor({ features: ({ defaultFeatures }) => defaultFeatures.map((f) => (f.key === "link" ? LinkFeature({ fields: keepingHrefs }) : f)) }),
+  // Links keep the address written (src/links.ts says why). Pictures (with a caption) and
+  // callouts go inside the words (src/richtext.ts).
+  editor: lexicalEditor({
+    features: ({ defaultFeatures }) => [
+      ...defaultFeatures.map((f) =>
+        f.key === "link" ? LinkFeature({ fields: keepingHrefs }) : f.key === "upload" ? UploadFeature({ collections: { media: { fields: pictureFields } } }) : f,
+      ),
+      BlocksFeature({ blocks: [Callout] }),
+    ],
+  }),
   db: postgresAdapter({
     pool: { ...poolFrom(env.DATABASE_URL ?? "postgres://localhost/app"), max: 5, connectionTimeoutMillis: 10_000, idleTimeoutMillis: 30_000 },
     schemaName: "cms",

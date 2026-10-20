@@ -4,10 +4,10 @@
 // team orders each list by dragging. `source` is the file a starting entry came from
 // (src/content.ts), so importing again leaves it as the team made it.
 import type { CollectionConfig, Field } from "payload"
-import { lexicalHTMLField } from "@payloadcms/richtext-lexical"
 import { anyone, staff } from "../access"
 import { editedBy } from "../edited"
 import { LISTS, type ListName } from "../content"
+import { richTextField } from "../richtext"
 
 const picture = (name = "picture", required = false): Field => ({ name, type: "upload", relationTo: "media", required })
 
@@ -44,8 +44,7 @@ export const People = list("people", "Person", "People", "name", ["name", "role"
 
 export const Faqs = list("faqs", "Question", "Questions", "question", ["question"], [
   { name: "question", type: "text", required: true },
-  { name: "answer", type: "richText", required: true },
-  lexicalHTMLField({ htmlFieldName: "answer_html", lexicalFieldName: "answer" }),
+  ...richTextField("answer", true),
 ])
 
 export const Locations = list("locations", "Location", "Locations", "name", ["name", "phone"], [

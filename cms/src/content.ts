@@ -15,8 +15,11 @@
 // A file is named where a picture goes as {"file": "media/team.jpg", "alt": "The team"} (with no
 // alt, the file's name in words), an entry of a shared list as {"entry": "testimonials/jane"} (its
 // list and its file's name), and a content block may give its words as
-// {"blockType": "content", "html": "<p>…</p>"}, and any rich-text field as {"html": "<p>…</p>"}. Each file is added on its own, so one that cannot
-// be added is named in the log and leaves the rest as they are.
+// {"blockType": "content", "html": "<p>…</p>"}, and any rich-text field as {"html": "<p>…</p>"}.
+// Words in HTML may hold pictures and callouts (src/inline.ts): <img src="media/…" alt="…">, in a
+// <figure> with a <figcaption> for a caption, and <aside data-callout="note|tip|warning"
+// data-title="…"><p>…</p></aside>. Each file is added on its own, so one that cannot be added is
+// named in the log and leaves the rest as they are.
 // Pure: what to add and how to read it. src/import.ts adds it; test/cms.test.ts tests this.
 import path from "node:path"
 
@@ -25,11 +28,21 @@ export type FileRef = { file: string; alt: string }
 export const isFileRef = (v: unknown): v is FileRef =>
   !!v && typeof v === "object" && !Array.isArray(v) && typeof (v as FileRef).file === "string" && Object.keys(v).every((k) => k === "file" || k === "alt")
 
-// Every file a piece of content names, once each.
+/** Every picture of the content folder an HTML text names (<img src="media/…">), a picture in
+ * the words (src/inline.ts). Pure. */
+export const inlineFiles = (html: string): { file: string; alt: string }[] =>
+  [...html.matchAll(/<img\b[^>]*>/gi)].flatMap(([tag]) => {
+    const src = /\ssrc="([^"]*)"/i.exec(tag)?.[1]
+    return src && !/^[a-z][a-z0-9+.-]*:|^\//i.test(src) ? [{ file: src, alt: /\salt="([^"]*)"/i.exec(tag)?.[1] ?? "" }] : []
+  })
+
+
+// Every file a piece of content names, once each, as a field or in its words.
 export const fileRefs = (v: unknown): FileRef[] => {
   const seen = new Map<string, FileRef>()
   const walk = (x: unknown): void => {
     if (isFileRef(x)) seen.has(x.file) || seen.set(x.file, x)
+    else if (typeof x === "string") inlineFiles(x).forEach((f) => seen.has(f.file) || seen.set(f.file, f))
     else if (Array.isArray(x)) x.forEach(walk)
     else if (x && typeof x === "object") Object.values(x).forEach(walk)
   }
@@ -74,17 +87,17 @@ export const isHtmlRef = (v: unknown): v is { html: string } =>
 
 // The content with each file named replaced by its media id, each entry named by its id (both in
 // ids, by name), and each block's HTML by the words it holds (toRichText).
-export const resolved = (v: unknown, ids: Map<string, number | string>, toRichText: (html: string) => unknown): unknown => {
+export const resolved = (v: unknown, ids: Map<string, number | string>, toRichText: (html: string, ids: Map<string, number | string>) => unknown): unknown => {
   if (isFileRef(v)) return ids.get(v.file) ?? null
   if (isEntryRef(v)) return ids.get(v.entry) ?? null
-  if (isHtmlRef(v)) return toRichText(v.html)
+  if (isHtmlRef(v)) return toRichText(v.html, ids)
   // An entry left out leaves the rest of a list of them.
   if (Array.isArray(v)) return v.filter((x) => !isEntryRef(x) || ids.has(x.entry)).map((x) => resolved(x, ids, toRichText))
   if (v && typeof v === "object") {
     const o = v as Record<string, unknown>
     if (o.blockType === "content" && typeof o.html === "string") {
       const { html, ...rest } = o
-      return { ...(resolved(rest, ids, toRichText) as object), content: toRichText(html) }
+      return { ...(resolved(rest, ids, toRichText) as object), content: toRichText(html, ids) }
     }
     return Object.fromEntries(Object.entries(o).map(([k, x]) => [k, resolved(x, ids, toRichText)]))
   }

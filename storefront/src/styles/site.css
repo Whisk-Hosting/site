@@ -75,6 +75,15 @@ input[type="checkbox"], input[type="radio"] { width: auto; min-height: 0; }
 .prose img { border-radius: var(--radius); }
 .prose ul, .prose ol { padding-left: 1.25em; margin: 0 0 12px; }
 .prose blockquote { margin: 0 0 12px; padding-left: 16px; border-left: 3px solid var(--line); color: var(--ink-soft); }
+.prose .inline-picture { margin: 24px 0; }
+.prose .inline-picture img, .prose .inline-picture video { border-radius: var(--radius); width: 100%; }
+.prose .inline-picture figcaption { margin-top: 8px; font-size: 0.9rem; color: var(--ink-soft); }
+.callout { margin: 24px 0; padding: 16px 20px; border-radius: var(--radius); background: var(--paper-soft); }
+.callout-tip { background: color-mix(in srgb, #067647 8%, var(--paper)); }
+.callout-warning { background: color-mix(in srgb, #b54708 10%, var(--paper)); }
+.callout p { margin: 0 0 8px; }
+.callout p:last-child { margin-bottom: 0; }
+.callout .callout-title { font-weight: 600; }
 .media { margin-left: 0; margin-right: 0; max-width: 800px; }
 .media.wide { max-width: none; }
 .media img, .media video { border-radius: var(--radius); width: 100%; }

@@ -123,7 +123,8 @@ sign-in; nobody has a password. It needs about 300 MB of memory.
 
 A page is a list of blocks (hero, text, picture, columns, list, form, HTML) at an address; a list
 block shows one of the shared lists (`cms/src/collections/Lists.ts`): all of it, a topic of it, or
-the entries picked. Drafts are
+the entries picked. Rich text holds pictures, with a caption, and callouts (a note, tip or warning)
+where they go in the words (`cms/src/richtext.ts`). Drafts are
 seen only by the team, in a preview beside the editor that follows the edit. A form block posts
 to `/forms/<name>`, kept in the database's `form_entries` table. The editor lists them under
 Enquiries, with times in `SITE_TIME_ZONE` (an IANA zone such as `Pacific/Auckland`, set in

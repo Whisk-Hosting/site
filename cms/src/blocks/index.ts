@@ -4,8 +4,8 @@
 // takes a short slug, or `dbName: ({ tableName }) => `${tableName}_short``: a plain-text dbName
 // gives every collection using the block one shared table, and their pages' blocks mix.
 import type { Block, Field, FieldHook } from "payload"
-import { lexicalHTMLField } from "@payloadcms/richtext-lexical"
 import { LIST_SLUGS, type ListSlug } from "../collections/Lists"
+import { richTextField } from "../richtext"
 
 const link = (name = "link"): Field => ({
   name,
@@ -18,11 +18,6 @@ const link = (name = "link"): Field => ({
 
 const image = (name = "image", required = false): Field => ({ name, type: "upload", relationTo: "media", required })
 
-const richText = (name = "content"): Field[] => [
-  { name, type: "richText" },
-  lexicalHTMLField({ htmlFieldName: `${name}_html`, lexicalFieldName: name }),
-]
-
 export const Hero: Block = {
   slug: "hero",
   admin: { disableBlockName: true },
@@ -34,7 +29,7 @@ export const Content: Block = {
   slug: "content",
   admin: { disableBlockName: true },
   interfaceName: "ContentBlock",
-  fields: richText(),
+  fields: richTextField("content"),
 }
 
 export const MediaBlock: Block = {
