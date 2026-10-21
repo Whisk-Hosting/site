@@ -2,6 +2,8 @@
 // Prompt and a Unix shell.
 //   node scripts/site.mjs build   the pages (Astro, storefront/), their files made small
 //                                 (scripts/optimise.mjs), and the editor (cms/)
+//   node scripts/site.mjs pages   the pages and their small files only: the image builds the editor
+//                                 in a stage of its own, which is reused while cms/ is unchanged
 //   node scripts/site.mjs dev     the pages built once, then the server with the editor rebuilding
 //                                 as its files change
 import { spawnSync } from "node:child_process"
@@ -44,6 +46,7 @@ const steps = {
     installCms()
     npm(["run", "build"])
   },
+  pages: buildPages,
   dev: () => {
     buildPages()
     installCms()

@@ -4,9 +4,11 @@
 // browser accepts without changing a single address or tag in the pages. Pages are drawn as they
 // are asked for, from the CMS, so a font keeps the letters the built pages, the starting content
 // (cms/content) and the set below use, and every private-use glyph (an icon font's), so words the
-// team adds later still draw in the site's own type.
-import { readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { extname, join } from "node:path";
+// team adds later still draw in the site's own type. Each result is kept in .cache/optimise under
+// a hash of what made it, so a build only encodes the pictures, fonts and files that changed.
+import { createHash } from "node:crypto";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, extname, join } from "node:path";
 import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 import sharp from "sharp";
 import subsetFont from "subset-font";
@@ -15,6 +17,9 @@ const app = join(import.meta.dirname, "..");
 const root = join(app, "storefront", "dist", "client");
 const server = join(app, "storefront", "dist", "server");
 const content = join(app, "cms", "content");
+const cache = join(app, ".cache", "optimise");
+// Changes when a recipe below does, so results made the old way are not reused.
+const RECIPE = "1";
 const TEXT = new Set([".html", ".css", ".js", ".mjs", ".json", ".xml", ".txt", ".svg", ".ico", ".map", ".webmanifest"]);
 const PHOTO = new Set([".png", ".jpg", ".jpeg"]);
 const MIN_TEXT = 1024;
@@ -41,12 +46,26 @@ const VARIANT_FEATURES = new Map(Object.entries({
 const walk = async (dir) =>
   (await Promise.all((await readdir(dir, { withFileTypes: true }).catch(() => [])).map((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)])))).flat();
 
+/** What `make` returns for `inputs`: from the cache when a build has made it before, otherwise
+ * made and kept. No result (undefined) is kept too, as an empty file. A cache that cannot be
+ * read or written only means the work is done again. */
+const remembered = async (kind, inputs, make) => {
+  const hash = createHash("sha256").update(RECIPE);
+  for (const input of inputs) hash.update(input).update("\0");
+  const file = join(cache, kind, hash.digest("hex"));
+  const hit = await readFile(file).catch(() => undefined);
+  if (hit) return hit.length > 0 ? hit : undefined;
+  const out = await make();
+  await mkdir(dirname(file), { recursive: true }).then(() => writeFile(file, out ?? Buffer.alloc(0))).catch(() => {});
+  return out;
+};
+
 /** Writes `file.br` and `file.gz` when each is smaller than the file. */
 const compress = async (file) => {
   const body = await readFile(file);
   if (body.length < MIN_TEXT) return 0;
-  const br = brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 11, [constants.BROTLI_PARAM_SIZE_HINT]: body.length } });
-  const gz = gzipSync(body, { level: 9 });
+  const br = await remembered("br", [body], () => brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 11, [constants.BROTLI_PARAM_SIZE_HINT]: body.length } }));
+  const gz = await remembered("gz", [body], () => gzipSync(body, { level: 9 }));
   if (br.length < body.length) await writeFile(`${file}.br`, br);
   if (gz.length < body.length) await writeFile(`${file}.gz`, gz);
   return body.length - br.length;
@@ -74,7 +93,8 @@ const featuresIn = (css) => [
  * subset stays as it is. The layout features in `keep` stay, so text sets the same. */
 const subset = async (file, text, keep) => {
   const body = await readFile(file);
-  const out = await subsetFont(body, text, { targetFormat: FONT.get(extname(file).toLowerCase()), keepFeatures: keep }).catch(() => undefined);
+  const format = FONT.get(extname(file).toLowerCase());
+  const out = await remembered("font", [body, format, text, keep.join(",")], () => subsetFont(body, text, { targetFormat: format, keepFeatures: keep }).catch(() => undefined));
   if (!out || out.length >= body.length) return 0;
   await writeFile(file, out);
   return body.length - out.length;
@@ -83,19 +103,21 @@ const subset = async (file, text, keep) => {
 /** Writes `photo.jpg.webp` when it is at least 10% smaller; the original stays for old browsers.
  * A PNG (often a logo or an icon) tries lossless first, so its edges stay exact. */
 const webp = async (file) => {
-  const size = (await stat(file)).size;
+  const body = await readFile(file);
+  const size = body.length;
   if (size < MIN_PHOTO) return 0;
-  const encode = (opts) => sharp(file, { animated: false }).webp(opts).toBuffer().catch(() => undefined);
   const png = extname(file).toLowerCase() === ".png";
   const tries = png ? [{ lossless: true, effort: 5 }, { quality: 90, alphaQuality: 100, effort: 5 }] : [{ quality: 82, effort: 5 }];
-  for (const opts of tries) {
-    const out = await encode(opts);
-    if (out && out.length <= size * 0.9) {
-      await writeFile(`${file}.webp`, out);
-      return size - out.length;
+  const out = await remembered("webp", [body, png ? "png" : "photo"], async () => {
+    for (const opts of tries) {
+      const out = await sharp(body, { animated: false }).webp(opts).toBuffer().catch(() => undefined);
+      if (out && out.length <= size * 0.9) return out;
     }
-  }
-  return 0;
+    return undefined;
+  });
+  if (!out) return 0;
+  await writeFile(`${file}.webp`, out);
+  return size - out.length;
 };
 
 const files = await walk(root);

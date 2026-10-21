@@ -148,8 +148,8 @@ server/cms.mjs              starts Payload beside the server and passes /cms to 
 migrate.mjs                 the migrate step: form_entries, then Payload's migrations
 storefront/                 every page: the frame, the blocks, the sitemap and robots.txt
 cms/                        Payload: pages, menus, media, its migrations
-scripts/site.mjs            build, dev
-scripts/optimise.mjs        fonts cut to the letters used, WebP pictures, Brotli and gzip copies
+scripts/site.mjs            build, pages, dev
+scripts/optimise.mjs        fonts cut to the letters used, WebP pictures, Brotli and gzip copies, kept between builds
 ```
 
 ### Run it on your computer
