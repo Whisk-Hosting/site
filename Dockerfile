@@ -36,4 +36,7 @@ COPY --from=build /out ./
 COPY --from=cms /app/cms ./cms
 USER nonroot
 EXPOSE 8080
+# The Sentry and OpenTelemetry SDKs add about 100 MB to a process, and this app already needs
+# most of its memory for the processes it runs.
+# doctor: allow W140 W141 too big for the SDKs
 CMD ["server.mjs"]
