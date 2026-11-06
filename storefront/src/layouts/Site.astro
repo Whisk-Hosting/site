@@ -19,6 +19,7 @@ const url = canonical ?? new URL(Astro.url.pathname, Astro.url).toString()
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
+    <script is:inline defer src="/.whisk/analytics.js"></script>
     {description && <meta name="description" content={description} />}
     <link rel="canonical" href={url} />
     {noindex && <meta name="robots" content="noindex" />}
