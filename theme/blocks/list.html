@@ -1,0 +1,63 @@
+{{- /* One of the shared lists, with the entries read with the page: testimonials as quotes,
+people and locations as cards, questions that open to their answers, and a row of logos. A list
+with no entries draws nothing. */ -}}
+{{- $kind := str .B.list -}}
+{{with list .B.entries}}
+<section class="block list list-{{$kind}}">
+  {{with $.B.heading}}<h2>{{.}}</h2>{{end}}
+  {{with $.B.intro}}<p class="lead">{{.}}</p>{{end}}
+  {{if eq $kind "testimonials"}}
+  <div class="cols">
+    {{range .}}
+    <figure class="quote">
+      <blockquote><p>{{.quote}}</p></blockquote>
+      <figcaption>
+        {{img .picture 64 false "face"}}
+        <span><strong>{{.name}}</strong>{{with .role}}<span class="muted">{{.}}</span>{{end}}</span>
+      </figcaption>
+    </figure>
+    {{end}}
+  </div>
+  {{else if eq $kind "people"}}
+  <div class="cols">
+    {{range .}}
+    <article class="col">
+      {{img .picture 480 false ""}}
+      <h3>{{.name}}</h3>
+      {{with .role}}<p class="muted">{{.}}</p>{{end}}
+      {{with .bio}}<p>{{.}}</p>{{end}}
+      {{with .email}}<p><a href="mailto:{{.}}">{{.}}</a></p>{{end}}
+      {{with .phone}}<p><a href="{{tel .}}">{{.}}</a></p>{{end}}
+    </article>
+    {{end}}
+  </div>
+  {{else if eq $kind "faqs"}}
+  <div class="faqs">
+    {{range .}}
+    <details>
+      <summary>{{.question}}</summary>
+      {{with .answer_html}}<div class="prose">{{html .}}</div>{{end}}
+    </details>
+    {{end}}
+  </div>
+  {{else if eq $kind "locations"}}
+  <div class="cols">
+    {{range .}}
+    <article class="col">
+      {{img .picture 480 false ""}}
+      <h3>{{.name}}</h3>
+      {{with lines .address}}<address>{{range $i, $l := .}}{{if $i}}<br>{{end}}{{$l}}{{end}}</address>{{end}}
+      {{with .phone}}<p><a href="{{tel .}}">{{.}}</a></p>{{end}}
+      {{with .email}}<p><a href="mailto:{{.}}">{{.}}</a></p>{{end}}
+      {{with lines .hours}}<p class="muted">{{range $i, $l := .}}{{if $i}}<br>{{end}}{{$l}}{{end}}</p>{{end}}
+      {{with .map}}<p><a href="{{.}}">Map</a></p>{{end}}
+    </article>
+    {{end}}
+  </div>
+  {{else if eq $kind "logos"}}
+  <ul class="logos">
+    {{range .}}<li>{{if .url}}<a href="{{.url}}">{{img .picture 160 false ""}}</a>{{else}}{{img .picture 160 false ""}}{{end}}</li>{{end}}
+  </ul>
+  {{end}}
+</section>
+{{end}}

@@ -1,9 +1,10 @@
 node_modules
-storefront/dist
-storefront/.astro
 .git
 .whisk
+.cache
 cms/node_modules
 cms/.next
 cms/media
 .github
+server
+server.exe

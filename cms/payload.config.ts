@@ -1,7 +1,7 @@
-// The CMS: Payload, holding the website's pages, menus and media. The storefront (Astro) draws
+// The CMS: Payload, holding the website's pages, menus and media. The app's Go server draws
 // every page from it, and in a shop from Medusa too; the team edits it at /cms, signed in through
 // Whisk. It shares the app's database, in a schema of its own (cms), and runs beside the app's
-// server, which starts it (a shop's src/lib/cms.ts, a website's server/cms.mjs), so the site and
+// server, which starts it (editor.go), so the site and
 // the editor are on one address. This folder is the same in templates/shop and templates/site.
 import path from "node:path"
 import { fileURLToPath } from "node:url"

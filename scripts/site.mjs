@@ -1,56 +1,37 @@
 // The website's build and laptop steps, in Node so they run the same in PowerShell, Command
 // Prompt and a Unix shell.
-//   node scripts/site.mjs build   the pages (Astro, storefront/), their files made small
-//                                 (scripts/optimise.mjs), and the editor (cms/)
-//   node scripts/site.mjs pages   the pages and their small files only: the image builds the editor
-//                                 in a stage of its own, which is reused while cms/ is unchanged
-//   node scripts/site.mjs dev     the pages built once, then the server with the editor rebuilding
-//                                 as its files change
+//   node scripts/site.mjs build   the server (Go, main.go) and the editor (cms/)
+//   node scripts/site.mjs files   the site's files made small beside them (scripts/optimise.mjs),
+//                                 which the image does; on a laptop the server sends them as they are
+//   node scripts/site.mjs dev     the editor built once, then the server reading the theme again
+//                                 on each page and the editor rebuilding as its files change
 import { spawnSync } from "node:child_process"
 import { existsSync } from "node:fs"
-import { createRequire } from "node:module"
 import path from "node:path"
 
 const root = path.resolve(import.meta.dirname, "..")
-const require = createRequire(path.join(root, "package.json"))
-// Each tool's own command, run with this Node.
-const bin = (pkg) => {
-  const manifest = require.resolve(`${pkg}/package.json`)
-  const { bin } = require(manifest)
-  return path.join(path.dirname(manifest), typeof bin === "string" ? bin : Object.values(bin)[0])
-}
-
-const run = (args, cwd = root) => {
-  const r = spawnSync(process.execPath, args, { cwd, stdio: "inherit" })
-  if (r.status !== 0) process.exit(r.status ?? 1)
-}
-
-// The editor (cms/): Payload, a Next.js app with its own packages, built in its folder.
 const cms = path.join(root, "cms")
-const npm = (args, cwd = cms) => {
-  const r = spawnSync("npm", args, { cwd, stdio: "inherit", shell: process.platform === "win32" })
+
+const run = (cmd, args, cwd = root) => {
+  const r = spawnSync(cmd, args, { cwd, stdio: "inherit", shell: process.platform === "win32" })
   if (r.status !== 0) process.exit(r.status ?? 1)
 }
 const installCms = () => {
-  if (!existsSync(path.join(cms, "node_modules", "next"))) npm(["ci", "--no-audit", "--no-fund"])
+  if (!existsSync(path.join(cms, "node_modules", "next"))) run("npm", ["ci", "--no-audit", "--no-fund"], cms)
 }
-
-const buildPages = () => {
-  run([bin("astro"), "build", "--root", "storefront"])
-  run([path.join(root, "scripts", "optimise.mjs")])
-}
+const files = () => run(process.execPath, [path.join(root, "scripts", "optimise.mjs")])
+const server = () => run("go", ["build", "-trimpath", "-o", process.platform === "win32" ? "server.exe" : "server", "."])
 
 const steps = {
   build: () => {
-    buildPages()
+    server()
     installCms()
-    npm(["run", "build"])
+    run("npm", ["run", "build"], cms)
   },
-  pages: buildPages,
+  files,
   dev: () => {
-    buildPages()
     installCms()
-    run(["server.mjs", "--develop"])
+    run("go", ["run", ".", "--develop"])
   },
 }
 

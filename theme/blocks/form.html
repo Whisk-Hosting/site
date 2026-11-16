@@ -1,0 +1,20 @@
+{{- /* A form posting to /forms/<name>, where the server keeps each entry and returns here with
+?sent=<name>. The edge's challenge keeps robots out; /whisk-forms.js solves it. */ -}}
+{{- $name := str .B.name -}}
+<section class="block form">
+  {{with .B.heading}}<h2>{{.}}</h2>{{end}}
+  {{if eq .View.Sent $name}}<p class="notice" role="status">{{.B.thanks}}</p>{{else}}
+  <form method="post" action="/forms/{{$name}}">
+    {{range list .B.fields}}{{$id := printf "%s-%s" $name (str .name)}}
+    {{if eq (str .type) "checkbox"}}
+    <label class="choice"><input type="checkbox" id="{{$id}}" name="{{.name}}" value="yes"{{if .required}} required{{end}}> {{.label}}</label>
+    {{else}}
+    <label for="{{$id}}">{{.label}}</label>
+    {{if eq (str .type) "textarea"}}<textarea id="{{$id}}" name="{{.name}}" rows="5"{{if .required}} required{{end}}></textarea>
+    {{else}}<input id="{{$id}}" name="{{.name}}" type="{{.type}}"{{if .required}} required{{end}}{{if eq (str .type) "email"}} autocomplete="email"{{else if eq (str .type) "tel"}} autocomplete="tel"{{end}}>{{end}}
+    {{end}}
+    {{end}}
+    <p style="margin-top:16px"><button type="submit">{{.B.submit}}</button></p>
+  </form>
+  {{end}}
+</section>

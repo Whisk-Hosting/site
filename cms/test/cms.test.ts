@@ -13,7 +13,7 @@ test("a page may have any address but the server's, and in a shop the shop's", (
   for (const shop of [true, false]) {
     for (const p of ["/", "/about", "/about/", "/services/fleet-hire", "/v1.2/notes", "/shopping-guide", "/products-we-love", "/te-reo/kia%20ora"]) assert.equal(pathProblem(p, shop), null, p)
     for (const p of ["about", "", "/a//b", "/a?b=1", "/a#b", "/a b"]) assert.match(pathProblem(p, shop) ?? "", /path only|starts with/, p)
-    for (const p of ["/app", "/cms/x", "/sitemap.xml", "/robots.txt", "/_astro/a.css", "/_next/x", "/forms/contact", "/.whisk/img/1", "/health"]) {
+    for (const p of ["/app", "/cms/x", "/sitemap.xml", "/robots.txt", "/_next/x", "/forms/contact", "/.whisk/img/1", "/health"]) {
       assert.match(pathProblem(p, shop) ?? "", shop ? /belongs to the shop/ : /belongs to the site/, p)
     }
   }

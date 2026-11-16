@@ -1,0 +1,6 @@
+{{- $m := media .B.image -}}
+<figure class="block media{{if .B.wide}} wide{{end}}">
+  {{if hasPrefix $m.MimeType "video/"}}<video src="{{$m.URL}}" controls preload="metadata"></video>
+  {{else}}{{img .B.image (pick .B.wide 1200 800) .First ""}}{{end}}
+  {{with .B.caption}}<figcaption class="muted">{{.}}</figcaption>{{end}}
+</figure>

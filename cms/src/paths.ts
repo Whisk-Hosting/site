@@ -1,9 +1,9 @@
 // Which addresses a page may have. The server's own (the editor, its files, forms, the platform's)
-// answer first, and in a shop so do the shop's pages and Medusa's (../src/lib/routes.ts), so a
+// answer first, and in a shop so do the shop's pages and Medusa's (../route.go), so a
 // page there could never be seen.
 import { inShop } from "./app"
 
-const SERVER = /^\/(app|health|forms|cms|_next|_astro|\.whisk)(\/|$)/
+const SERVER = /^\/(app|health|forms|cms|_next|\.whisk)(\/|$)/
 const SHOP = /^\/(shop|products|categories|collections|cart|checkout|account|order|search|store|admin|auth|hooks|erp-link)(\/|$)/
 const SHAPE = /^\/([A-Za-z0-9._~!$&'()*+,;=:@%-]+\/?)*$/
 

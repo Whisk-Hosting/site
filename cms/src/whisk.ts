@@ -1,5 +1,5 @@
 // Whisk for the CMS: who is signed in (CONTRACT.md §4) and the platform's uploads (§8), the same
-// rules as the shop's own (../src/lib/staff.ts, ../src/lib/whisk.ts). Every call has a deadline.
+// rules as the shop's own (../route.go, IsStaff). Every call has a deadline.
 
 // An agent is a coding agent reaching the site as the person it acts for.
 export type Agent = { id: string; name: string }

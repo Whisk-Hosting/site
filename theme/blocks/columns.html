@@ -1,0 +1,13 @@
+<section class="block columns">
+  {{with .B.heading}}<h2>{{.}}</h2>{{end}}
+  <div class="cols">
+    {{range list .B.items}}
+    <div class="col">
+      {{img .image 480 false ""}}
+      {{with .heading}}<h3>{{.}}</h3>{{end}}
+      {{with .text}}<p>{{.}}</p>{{end}}
+      {{with .link}}{{if and .url .label}}<a href="{{.url}}">{{.label}}</a>{{end}}{{end}}
+    </div>
+    {{end}}
+  </div>
+</section>

@@ -9,7 +9,7 @@ routes:
   challenge: ["/forms/*"]
 
 # The business's own admin, which the Whisk bar links for its team: the editor, and the editor
-# opened at the page being looked at (server.mjs).
+# opened at the page being looked at (main.go).
 admin:
   path: /app
   edit: "/cms/edit?path={path}"
@@ -24,8 +24,11 @@ migrate: "node migrate.mjs"
 storage: true
 
 env:
-  # The port of this machine the editor (cms/) answers on, inside the app only (server/cms.mjs).
+  # The port of this machine the editor (cms/) answers on, inside the app only (editor.go).
   CMS_PORT: "9100"
+  # Where the pages read content when the editor runs elsewhere (Whisk's content engine); empty,
+  # the server starts the editor in cms/ and reads it on CMS_PORT (editor.go).
+  CMS_URL: ""
   # The editor is part of a website, not a shop: it offers no product pages or products block
   # (cms/src/app.ts).
   CMS_SHOP: "0"

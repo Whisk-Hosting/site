@@ -7,7 +7,7 @@ export type Env = Record<string, string | undefined>
 // The platform's DATABASE_URL ends in sslmode=require, which in libpq means "encrypt, but do not
 // check the certificate" (CONTRACT.md §5). node-postgres reads require as verify-full, so the mode
 // is taken off the address and handed to the driver as what libpq means by it. The same as the
-// shop's own (../src/lib/settings.ts).
+// shop's own.
 export type Pool = { connectionString: string; ssl: false | { rejectUnauthorized: boolean } }
 
 const NO_VERIFY = new Set(["require", "prefer", "allow"])

@@ -1,8 +1,8 @@
 // After the build (scripts/site.mjs): every font cut down to the letters the site can use, a WebP
 // beside every large PNG and JPEG, and Brotli and gzip copies of every text file in the
-// storefront's built files (storefront/dist/client), so server.mjs sends the smallest form a
+// site's files (public/), so the server (main.go) sends the smallest form a
 // browser accepts without changing a single address or tag in the pages. Pages are drawn as they
-// are asked for, from the CMS, so a font keeps the letters the built pages, the starting content
+// are asked for, from the CMS, so a font keeps the letters the theme (theme/), the starting content
 // (cms/content) and the set below use, and every private-use glyph (an icon font's), so words the
 // team adds later still draw in the site's own type. Each result is kept in .cache/optimise under
 // a hash of what made it, so a build only encodes the pictures, fonts and files that changed.
@@ -14,8 +14,8 @@ import sharp from "sharp";
 import subsetFont from "subset-font";
 
 const app = join(import.meta.dirname, "..");
-const root = join(app, "storefront", "dist", "client");
-const server = join(app, "storefront", "dist", "server");
+const root = join(app, "public");
+const server = join(app, "theme");
 const content = join(app, "cms", "content");
 const cache = join(app, ".cache", "optimise");
 // Changes when a recipe below does, so results made the old way are not reused.

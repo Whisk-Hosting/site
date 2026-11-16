@@ -1,6 +1,6 @@
-// The blocks a page is built from. Each has an Astro component of the same name that draws it
-// (../storefront/src/blocks/), and a moved site adds its own blocks the same way: a file here,
-// listed below, and its component there. A block whose nested names pass Postgres's 63 letters
+// The blocks a page is built from. Each has a template of the same name that draws it
+// (../theme/blocks/), and a moved site adds its own blocks the same way: a file here,
+// listed below, and its template there. A block whose nested names pass Postgres's 63 letters
 // takes a short slug, or `dbName: ({ tableName }) => `${tableName}_short``: a plain-text dbName
 // gives every collection using the block one shared table, and their pages' blocks mix.
 import type { Block, Field, FieldHook } from "payload"

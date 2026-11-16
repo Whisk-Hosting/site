@@ -1,0 +1,58 @@
+{{- /* Every page: the frame, with the header's menu and the footer's columns from the editor's
+menus, and the page's blocks between them, each drawn by blocks/<blockType>.html. */ -}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <script defer src="/.whisk/analytics.js"></script>
+    {{with .Description}}<meta name="description" content="{{.}}">{{end}}
+    <link rel="canonical" href="{{.Canonical}}">
+    {{if .Noindex}}<meta name="robots" content="noindex">{{end}}
+    <meta property="og:title" content="{{.Title}}">
+    <meta property="og:site_name" content="{{.Name}}">
+    <meta property="og:url" content="{{.Canonical}}">
+    {{with .Description}}<meta property="og:description" content="{{.}}">{{end}}
+    {{with .Image}}<meta property="og:image" content="{{.}}">{{end}}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <style>{{.CSS}}</style>
+    {{.Head}}
+    <script src="/whisk-forms.js" defer></script>
+    {{if .Preview}}<script src="/whisk-preview.js" defer></script>{{end}}
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">{{.Name}}</a>
+        {{with .Menus.Header}}
+        <nav class="menu" aria-label="Menu">
+          {{range .}}<a href="{{.URL}}">{{.Label}}</a>{{end}}
+        </nav>
+        {{end}}
+      </div>
+    </header>
+    <main id="main">
+      <div class="wrap">
+        {{if eq .Status 404}}{{template "404" .}}{{else}}{{range $i, $b := .Page.Layout}}{{draw $b $i $}}{{end}}{{end}}
+      </div>
+    </main>
+    <footer class="foot">
+      {{with .Menus.Columns}}
+      <div class="wrap foot-cols">
+        {{range .}}
+        <nav{{with .Heading}} aria-label="{{.}}"{{end}}>
+          {{with .Heading}}<h2>{{.}}</h2>{{end}}
+          {{range .Links}}<a href="{{.URL}}">{{.Label}}</a>{{end}}
+        </nav>
+        {{end}}
+      </div>
+      {{end}}
+      {{with .Menus.Note}}<div class="wrap"><p class="muted">{{.}}</p></div>{{end}}
+      <div class="wrap">
+        <span>© {{.Year}} {{.Name}}</span>
+      </div>
+    </footer>
+  </body>
+</html>

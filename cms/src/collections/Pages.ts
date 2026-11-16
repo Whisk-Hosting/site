@@ -1,5 +1,5 @@
-// The website's pages. Each has an address, and the storefront (Astro) draws the page there from
-// its blocks (../storefront/src/pages/[...path].astro). Drafts are seen only by the team, in the
+// The website's pages. Each has an address, and the app's Go server draws the page there from
+// its blocks (../theme/blocks/). Drafts are seen only by the team, in the
 // preview beside the editor.
 import type { CollectionConfig } from "payload"
 import { inShop, MARKET_OPTIONS, markets } from "../app"

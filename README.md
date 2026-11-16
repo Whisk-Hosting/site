@@ -15,7 +15,7 @@
 
 <p align="center">
   <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-14213d">
-  <img alt="Astro" src="https://img.shields.io/badge/pages-Astro-14213d">
+  <img alt="Go" src="https://img.shields.io/badge/pages-Go-14213d">
   <img alt="Payload" src="https://img.shields.io/badge/editor-Payload-14213d">
   <img alt="Node 24" src="https://img.shields.io/badge/node-24-14213d">
   <img alt="Any paid Whisk plan" src="https://img.shields.io/badge/runs%20on-any%20paid%20Whisk%20plan-e3a92b">
@@ -116,7 +116,8 @@ security, so the agent writes only the app. This website is one of its starting 
 
 ## How it works
 
-A business's website on Whisk, headless, in one app on one address. Astro draws every page from
+A business's website on Whisk, headless, in one app on one address. A small Go server draws every
+page from
 [Payload](https://payloadcms.com), which holds the pages, the menus and the pictures and runs
 beside it in the same app. The business's Whisk team edits the site at `/app` with their Whisk
 sign-in; nobody has a password. It needs about 300 MB of memory.
@@ -137,18 +138,25 @@ other sitemap addresses in `sitemaps.json` (`["/sitemap_index.xml"]`), and a `ro
 `whisk.yaml` is served as it is. Starting content goes in `cms/content/` and is added once, never
 over an edit (`cms/src/content.ts` says how).
 
-The look is `storefront/` (Astro): the frame (`src/layouts/Site.astro`), the blocks
-(`src/blocks`, one per Payload block in `cms/src/blocks`) and `src/styles/site.css`. Change a block
-in both places, then `cd cms && npx payload migrate:create <name>` for the database.
+The look is `theme/`, plain HTML with Go's template tags: the frame and every page
+(`theme/site.html`), one file per block (`theme/blocks/<block>.html`, one per Payload block in
+`cms/src/blocks`), the not-found page (`theme/404.html`) and `theme/site.css`, which goes inline in
+every page. A block's file reads the block's fields as `.B.<field>` and draws a picture with
+`{{img .B.image 720 .First ""}}`. Add a block by adding its file here and the block in
+`cms/src/blocks`, then `cd cms && npx payload migrate:create <name>` for the database. Files in
+`public/` are served as they are. The server's own code (`*.go`) rarely needs a change.
 
 ```
-server.mjs                  the server: health, forms, the admin, the editor, redirects, files, pages
-server/routes.mjs           what the server decides about each request
-server/cms.mjs              starts Payload beside the server and passes /cms to it
+main.go                     the server: health, forms, the admin, the editor, redirects, files, pages
+route.go                    what the server decides about each request
+content.go                  reading pages and menus from the editor's API, kept for when it restarts
+render.go                   drawing pages from theme/
+editor.go                   starts Payload beside the server and passes /cms to it
+theme/                      every page: the frame, the blocks, the look
+public/                     files served as they are: the favicon, the form and preview scripts
 migrate.mjs                 the migrate step: form_entries, then Payload's migrations
-storefront/                 every page: the frame, the blocks, the sitemap and robots.txt
 cms/                        Payload: pages, menus, media, its migrations
-scripts/site.mjs            build, pages, dev
+scripts/site.mjs            build, files, dev
 scripts/optimise.mjs        fonts cut to the letters used, WebP pictures, Brotli and gzip copies, kept between builds
 ```
 
@@ -165,8 +173,8 @@ whisk dev --as you@example.com --roles owner -- npm run start
 
 These lines work the same in PowerShell, Command Prompt and a Unix shell. `whisk dev` runs the
 migration (`node migrate.mjs`) first. Open http://127.0.0.1:3000 for the site and
-http://127.0.0.1:3000/app for the editor. `npm run dev` instead runs the editor in development,
-rebuilding as its files change.
+http://127.0.0.1:3000/app for the editor. It needs Go 1.26 or later. `npm run dev` instead reads
+the theme again on every page and runs the editor in development, rebuilding as its files change.
 
 ### Check it
 

@@ -3,7 +3,7 @@
 // starts selling keeps every page, menu and picture; only what the editor offers differs.
 export const inShop = (env: Record<string, string | undefined> = process.env) => env.CMS_SHOP === "1"
 
-// The markets a shop sells in, one site each (SHOP_MARKETS, ../src/lib/market.ts): a page can be
+// The markets a shop sells in, one site each (SHOP_MARKETS, ../market.go): a page can be
 // given to one of them. Empty for a website and for a shop that sells in one market.
 // Every market's option is in the database's list whatever the shop sells in, so the tables are
 // the same in every copy; the field is shown only in a shop with more than one.
