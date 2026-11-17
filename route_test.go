@@ -124,4 +124,8 @@ func TestConfig(t *testing.T) {
 	if c.Content != "http://content.internal" || c.CMSPort != "" {
 		t.Errorf("an engine elsewhere runs no editor here: %+v", c)
 	}
+	c = configFrom(env(map[string]string{"WHISK_CONTENT_URL": "http://content.internal.whisk:9320/", "CMS_URL": "http://other"}), nil)
+	if c.Content != "http://content.internal.whisk:9320" || c.CMSPort != "" {
+		t.Errorf("Whisk's content engine, which the node names, comes first: %+v", c)
+	}
 }

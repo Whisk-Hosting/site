@@ -1,7 +1,9 @@
 // The editor (Payload, cms/) runs beside the website's server while the site carries its own copy:
 // the server starts it on a port of this machine's own, starts it again when it stops, and passes
 // /cms (the editor and its API) and /_next (its files) to it. Nothing outside the app reaches that
-// port. When cms/ has no built editor, the server starts none and reads content from CMS_URL.
+// port. When Whisk's content engine answers the site (WHISK_CONTENT_URL, set by the node for a
+// site whose whisk.yaml says `content: payload`) or CMS_URL names another editor, the server
+// starts none and reads content there; so it does when cms/ has no built editor.
 package main
 
 import (
@@ -13,8 +15,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
+
+// contentURL is where the pages read content when the editor runs elsewhere: Whisk's content
+// engine, which the node names, else CMS_URL; "" when the editor runs here.
+func contentURL(getenv func(string) string) string {
+	return strings.TrimRight(pick(getenv("WHISK_CONTENT_URL") != "", getenv("WHISK_CONTENT_URL"), getenv("CMS_URL")), "/")
+}
 
 // RestartDelay is how long to wait before starting the editor again after it stopped failures
 // times in a row: a second, doubling to a minute, so an editor that cannot start does not spin.

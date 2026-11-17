@@ -18,6 +18,10 @@ health:
   path: /health/ready
   timeout: 60
 
+# The site editor's API (/cms/api) and the editor (/cms) are cms/'s Payload, which Whisk's content
+# engine may answer on the same database; the pages then read it at WHISK_CONTENT_URL.
+content: payload
+
 database: app
 migrate: "node migrate.mjs"
 
@@ -26,8 +30,8 @@ storage: true
 env:
   # The port of this machine the editor (cms/) answers on, inside the app only (editor.go).
   CMS_PORT: "9100"
-  # Where the pages read content when the editor runs elsewhere (Whisk's content engine); empty,
-  # the server starts the editor in cms/ and reads it on CMS_PORT (editor.go).
+  # Where the pages read content when another editor answers it; empty, and with no
+  # WHISK_CONTENT_URL from Whisk, the server starts the editor in cms/ on CMS_PORT (editor.go).
   CMS_URL: ""
   # The editor is part of a website, not a shop: it offers no product pages or products block
   # (cms/src/app.ts).

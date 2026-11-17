@@ -38,8 +38,8 @@ func configFrom(getenv func(string) string, args []string) Config {
 		Port:    or(getenv("PORT"), "8080"),
 		Root:    ".",
 		Name:    or(getenv("WHISK_APP_NAME"), "Website"),
-		Content: or(getenv("CMS_URL"), "http://127.0.0.1:"+cmsPort),
-		CMSPort: pick(getenv("CMS_URL") == "", cmsPort, ""),
+		Content: or(contentURL(getenv), "http://127.0.0.1:"+cmsPort),
+		CMSPort: pick(contentURL(getenv) == "", cmsPort, ""),
 		Develop: some(args, func(a string) bool { return a == "--develop" }),
 	}
 }
