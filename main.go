@@ -1,7 +1,7 @@
 // The website's server: one Go process in front of everything the site is. What it does with
 // each request is decided by Decide (route.go), a pure function; this file carries it out. Pages
 // are drawn from the theme (theme/, render.go) with content read from the content engine
-// (content.go); files come from public/.
+// (content.go); files come from public/. `server migrate` makes the table form posts are kept in.
 package main
 
 import (
@@ -27,20 +27,23 @@ type Config struct {
 	Root    string
 	Name    string
 	Content string // the content engine's address
-	CMSPort string // the port the editor beside the site answers on, when it runs here
-	Develop bool
+	CMSPort string // the loopback port of the content engine the server starts, when it starts one
+	// Whisk's content engine answers the site: drafts are read through the site's own address.
+	DraftsAtSite bool
+	Develop      bool
 }
 
 func configFrom(getenv func(string) string, args []string) Config {
 	or := func(v, d string) string { return pick(v != "", v, d) }
 	cmsPort := or(getenv("CMS_PORT"), "9100")
 	return Config{
-		Port:    or(getenv("PORT"), "8080"),
-		Root:    ".",
-		Name:    or(getenv("WHISK_APP_NAME"), "Website"),
-		Content: or(contentURL(getenv), "http://127.0.0.1:"+cmsPort),
-		CMSPort: pick(contentURL(getenv) == "", cmsPort, ""),
-		Develop: some(args, func(a string) bool { return a == "--develop" }),
+		Port:         or(getenv("PORT"), "8080"),
+		Root:         ".",
+		Name:         or(getenv("WHISK_APP_NAME"), "Website"),
+		Content:      or(contentURL(getenv), "http://127.0.0.1:"+cmsPort),
+		CMSPort:      pick(contentURL(getenv) == "", cmsPort, ""),
+		DraftsAtSite: getenv("WHISK_CONTENT_URL") != "",
+		Develop:      some(args, func(a string) bool { return a == "--develop" }),
 	}
 }
 
@@ -52,7 +55,9 @@ type server struct {
 	content Content
 	db      *pgxpool.Pool
 	editor  http.Handler
-	robots  string
+	// engineHere: the server started the content engine, so it is ready once the engine answers.
+	engineHere bool
+	robots     string
 }
 
 func main() {
@@ -67,10 +72,22 @@ func run() error {
 	cfg := configFrom(os.Getenv, os.Args[1:])
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer stop()
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		return migrate(ctx, os.Getenv("DATABASE_URL"))
+	}
 
+	var err error
 	at := func(f string) string { return filepath.Join(cfg.Root, f) }
 	read := func(f string) []byte { b, _ := os.ReadFile(at(f)); return b }
-	editor := cfg.CMSPort != "" && runEditor(ctx, at("cms"), cfg.CMSPort, cfg.Develop)
+	key := ""
+	if cfg.CMSPort != "" {
+		if key, err = newKey(); err != nil {
+			return err
+		}
+		if err := runEngine(ctx, engineFor(os.Getenv, cfg.Root, cfg.CMSPort, key), cfg.Root); err != nil {
+			return err
+		}
+	}
 
 	theme, err := LoadTheme(os.DirFS(at("theme")), "site.css", nil)
 	if err != nil {
@@ -83,13 +100,13 @@ func run() error {
 			Sitemaps:  ParseSitemaps(read("sitemaps.json")),
 			Public:    at("public"),
 			Has:       isFile,
-			Editor:    editor,
 		},
 		// In development the theme is read again on each page, so an edit shows on reload.
-		theme:   pick(cfg.Develop, func() (Theme, error) { return LoadTheme(os.DirFS(at("theme")), "site.css", nil) }, func() (Theme, error) { return theme, nil }),
-		content: NewHTTPContent(cfg.Content),
-		editor:  editorProxy(cfg.Content),
-		robots:  string(read("robots.txt")),
+		theme:      pick(cfg.Develop, func() (Theme, error) { return LoadTheme(os.DirFS(at("theme")), "site.css", nil) }, func() (Theme, error) { return theme, nil }),
+		content:    NewHTTPContent(cfg.Content, cfg.DraftsAtSite, key),
+		editor:     editorProxy(cfg.Content, key),
+		engineHere: key != "",
+		robots:     string(read("robots.txt")),
 	}
 	if url := os.Getenv("DATABASE_URL"); url != "" {
 		pc, err := pgxpool.ParseConfig(url)
@@ -111,7 +128,7 @@ func run() error {
 		defer cancel()
 		_ = srv.Shutdown(shut)
 	}()
-	slog.Info("listening", "port", cfg.Port, "content", cfg.Content, "editor", editor)
+	slog.Info("listening", "port", cfg.Port, "content", cfg.Content, "engineHere", key != "")
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
@@ -129,6 +146,7 @@ func requestOf(r *http.Request) Request {
 	for k, v := range r.Header {
 		h[strings.ToLower(k)] = strings.Join(v, ",")
 	}
+	h["host"] = r.Host // Go keeps it out of the headers; a draft is read at the site's own address
 	return Request{Method: r.Method, Path: r.URL.Path, Query: r.URL.RawQuery, Headers: h}
 }
 
@@ -143,9 +161,6 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case Go:
 		w.Header().Set("cache-control", "no-store")
 		http.Redirect(w, r, a.Location, http.StatusFound)
-	case EditLink:
-		w.Header().Set("cache-control", "no-store")
-		http.Redirect(w, r, EditorFor(s.content.FindForEdit(r.Context(), askerOf(req, false), a.EditPath)), http.StatusFound)
 	case Editor:
 		s.editor.ServeHTTP(w, r)
 	case Moved:
@@ -193,14 +208,14 @@ func (s *server) ready(w http.ResponseWriter, r *http.Request) {
 	} else if err := s.db.Ping(ctx); err != nil {
 		failed = append(failed, "database: "+err.Error())
 	}
-	if s.site.Editor {
+	if s.engineHere {
 		if _, err := s.content.Listed(ctx, Asker{}); err != nil {
-			failed = append(failed, "cms: "+err.Error())
+			failed = append(failed, "content engine: "+err.Error())
 		}
 	}
 	if len(failed) > 0 {
 		w.Header().Set("retry-after", "5")
-		writeError(w, http.StatusServiceUnavailable, "NOT_READY", "Not ready: "+strings.Join(failed, "; ")+".", "Wait for the database and the editor to start.")
+		writeError(w, http.StatusServiceUnavailable, "NOT_READY", "Not ready: "+strings.Join(failed, "; ")+".", "Wait for the database and the content engine to start.")
 		return
 	}
 	w.Header().Set("content-type", "application/json")
@@ -208,7 +223,7 @@ func (s *server) ready(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.WriteString(w, `{"ok":true}`)
 }
 
-// form keeps a form's entry in form_entries (migrate.mjs), then goes back to the page it came
+// form keeps a form's entry in form_entries (migrate), then goes back to the page it came
 // from. The edge's challenge (whisk.yaml) keeps robots out.
 func (s *server) form(w http.ResponseWriter, r *http.Request, name string) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 64<<10+1))
@@ -350,4 +365,31 @@ func withHealth(h http.Handler, ready http.HandlerFunc) *http.ServeMux {
 	mux.HandleFunc("GET /health/ready", ready)
 	mux.Handle("/", h)
 	return mux
+}
+
+// formEntries is the table a form's entries are kept in, which the editor's Enquiries reads.
+const formEntries = `create table if not exists form_entries (
+  id bigint generated always as identity primary key,
+  form text not null,
+  page text,
+  data jsonb not null,
+  created_at timestamptz not null default now()
+)`
+
+// migrate makes the table form posts are kept in (the migrate step in whisk.yaml), with the
+// direct database connection, before traffic moves to the new version. Safe on every deploy. The
+// editor's own tables are the content engine's, which makes and moves them itself.
+func migrate(ctx context.Context, url string) error {
+	if url == "" {
+		return errors.New("DATABASE_URL is not set: run the migrate step with whisk dev or whisk deploy, which set it")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	db, err := pgxpool.New(ctx, url)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	_, err = db.Exec(ctx, formEntries)
+	return err
 }

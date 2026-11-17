@@ -16,8 +16,7 @@
 <p align="center">
   <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-14213d">
   <img alt="Go" src="https://img.shields.io/badge/pages-Go-14213d">
-  <img alt="Payload" src="https://img.shields.io/badge/editor-Payload-14213d">
-  <img alt="Node 24" src="https://img.shields.io/badge/node-24-14213d">
+  <img alt="Whisk's content engine" src="https://img.shields.io/badge/editor-Whisk%20content%20engine-14213d">
   <img alt="Any paid Whisk plan" src="https://img.shields.io/badge/runs%20on-any%20paid%20Whisk%20plan-e3a92b">
 </p>
 
@@ -117,53 +116,58 @@ security, so the agent writes only the app. This website is one of its starting 
 ## How it works
 
 A business's website on Whisk, headless, in one app on one address. A small Go server draws every
-page from
-[Payload](https://payloadcms.com), which holds the pages, the menus and the pictures and runs
-beside it in the same app. The business's Whisk team edits the site at `/app` with their Whisk
-sign-in; nobody has a password. It needs about 300 MB of memory.
+page from Whisk's content engine, which holds the pages, the menus and the pictures in the app's
+own database and answers the editor at `/cms` and its API at `/cms/api` in
+[Payload](https://payloadcms.com)'s shape. On Whisk's machines the engine answers the site
+itself; in a preview or on a laptop the server starts it beside the pages. The business's Whisk
+team edits the site at `/app` with their Whisk sign-in; nobody has a password. It needs about
+40 MB of memory.
 
 A page is a list of blocks (hero, text, picture, columns, list, form, HTML) at an address; a list
-block shows one of the shared lists (`cms/src/collections/Lists.ts`): all of it, a topic of it, or
-the entries picked. Rich text holds pictures, with a caption, and callouts (a note, tip or warning)
-where they go in the words (`cms/src/richtext.ts`). Drafts are
+block shows one of the shared lists: all of it, a topic of it, or the entries picked. Rich text
+holds pictures, with a caption, and callouts (a note, tip or warning) where they go in the words,
+and an agent may send it as HTML (`{"html": "…"}`). Drafts are
 seen only by the team, in a preview beside the editor that follows the edit. A form block posts
 to `/forms/<name>`, kept in the database's `form_entries` table. The editor lists them under
 Enquiries, with times in `SITE_TIME_ZONE` (an IANA zone such as `Pacific/Auckland`, set in
 `whisk.yaml`'s `env`; UTC when unset). A coding agent edits the pages
-through Payload's API at `/cms/api` on the site's address, with its Whisk credential
+through the API at `/cms/api` on the site's address, with its Whisk credential
 (`Authorization: Bearer $WHISK_TOKEN`), as the person it works for; each version of a page
 records who made it, as "Claude for Jane Doe" for an agent's change. Old addresses go in
 `redirects.json` (`{"from": "/old", "to": "/new"}`, or `"status": 410` for a page that is gone),
 other sitemap addresses in `sitemaps.json` (`["/sitemap_index.xml"]`), and a `robots.txt` beside
-`whisk.yaml` is served as it is. Starting content goes in `cms/content/` and is added once, never
-over an edit (`cms/src/content.ts` says how).
+`whisk.yaml` is served as it is. Starting content goes in `content/` (`content/README.md` says how) and is added once, never
+over an edit.
 
 The look is `theme/`, plain HTML with Go's template tags: the frame and every page
-(`theme/site.html`), one file per block (`theme/blocks/<block>.html`, one per Payload block in
-`cms/src/blocks`), the not-found page (`theme/404.html`) and `theme/site.css`, which goes inline in
-every page. A block's file reads the block's fields as `.B.<field>` and draws a picture with
-`{{img .B.image 720 .First ""}}`. Add a block by adding its file here and the block in
-`cms/src/blocks`, then `cd cms && npx payload migrate:create <name>` for the database. Files in
-`public/` are served as they are. The server's own code (`*.go`) rarely needs a change.
+(`theme/site.html`), one file per block (`theme/blocks/<block>.html`), the not-found page
+(`theme/404.html`) and `theme/site.css`, which goes inline in every page. A block's file reads the
+block's fields as `.B.<field>` and draws a picture with `{{img .B.image 720 .First ""}}`. Add a
+block of the site's own with two files of the same name: its fields in `content/blocks/<slug>.json`
+(`{"label": "Pricing table", "fields": [{"name": "heading", "type": "text", "label": "Heading"}]}`;
+the types are text, textarea, words, picture, check, number, select, link, group and rows), which
+the editor builds its form from, and its look in `theme/blocks/<slug>.html`. Files in `public/` are
+served as they are. The server's own code (`*.go`) rarely needs a change.
 
 ```
-main.go                     the server: health, forms, the admin, the editor, redirects, files, pages
+main.go                     the server: health, forms, the admin, the editor, redirects, files,
+                            pages, and the migrate step (form_entries)
 route.go                    what the server decides about each request
-content.go                  reading pages and menus from the editor's API, kept for when it restarts
+content.go                  reading pages and menus from the engine's API, kept for when it restarts
 render.go                   drawing pages from theme/
-editor.go                   starts Payload beside the server and passes /cms to it
+editor.go                   starts the content engine beside the server off Whisk's machines and
+                            passes /cms to it
 theme/                      every page: the frame, the blocks, the look
+content/                    starting content and the site's own blocks
 public/                     files served as they are: the favicon, the form and preview scripts
-migrate.mjs                 the migrate step: form_entries, then Payload's migrations
-cms/                        Payload: pages, menus, media, its migrations
 scripts/site.mjs            build, files, dev
 scripts/optimise.mjs        fonts cut to the letters used, WebP pictures, Brotli and gzip copies, kept between builds
 ```
 
 ### Run it on your computer
 
-`whisk dev` needs Docker with the compose plugin. It starts Postgres and a local edge, then runs
-the site with the environment it has in production:
+`whisk dev` needs Docker with the compose plugin. It starts Postgres and a local edge, downloads
+Whisk's content engine, then runs the site with the environment it has in production:
 
 ```
 npm install
@@ -172,9 +176,9 @@ whisk dev --as you@example.com --roles owner -- npm run start
 ```
 
 These lines work the same in PowerShell, Command Prompt and a Unix shell. `whisk dev` runs the
-migration (`node migrate.mjs`) first. Open http://127.0.0.1:3000 for the site and
+migrate step (`./server migrate`) first. Open http://127.0.0.1:3000 for the site and
 http://127.0.0.1:3000/app for the editor. It needs Go 1.26 or later. `npm run dev` instead reads
-the theme again on every page and runs the editor in development, rebuilding as its files change.
+the theme again on every page.
 
 ### Check it
 

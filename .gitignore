@@ -1,9 +1,6 @@
 node_modules
 .env
 .cache
-.next
-cms/media
 *.tsbuildinfo
-cms/src/payload-types.ts
 /server
 /server.exe

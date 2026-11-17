@@ -18,23 +18,26 @@ health:
   path: /health/ready
   timeout: 60
 
-# The site editor's API (/cms/api) and the editor (/cms) are cms/'s Payload, which Whisk's content
-# engine may answer on the same database; the pages then read it at WHISK_CONTENT_URL.
+# The site editor (/cms) and its API (/cms/api, in Payload's shape) are Whisk's content engine,
+# which keeps the pages, menus and pictures in this app's database. On Whisk's machines it answers
+# them itself; elsewhere the server starts it beside the pages (editor.go). content/ is the
+# starting content and content/blocks/ the site's own blocks.
 content: payload
 
 database: app
-migrate: "node migrate.mjs"
+# The table form posts are kept in (main.go); the engine makes its own.
+migrate: "./server migrate"
 
 storage: true
 
 env:
-  # The port of this machine the editor (cms/) answers on, inside the app only (editor.go).
+  # The port of this machine the content engine the server starts answers on, inside the app
+  # only (editor.go).
   CMS_PORT: "9100"
-  # Where the pages read content when another editor answers it; empty, and with no
-  # WHISK_CONTENT_URL from Whisk, the server starts the editor in cms/ on CMS_PORT (editor.go).
+  # Where the pages read content when another engine answers it; empty, and with no
+  # WHISK_CONTENT_URL from Whisk, the server starts the engine beside it on CMS_PORT (editor.go).
   CMS_URL: ""
-  # The editor is part of a website, not a shop: it offers no product pages or products block
-  # (cms/src/app.ts).
+  # The editor is part of a website, not a shop: it offers no product pages or products block.
   CMS_SHOP: "0"
-  # The business's time zone for the times the editor shows, such as enquiries (cms/src/admin/data.ts).
+  # The business's time zone for the times the editor shows, such as enquiries.
   SITE_TIME_ZONE: "UTC"

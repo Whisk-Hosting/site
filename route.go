@@ -20,16 +20,15 @@ type Request struct {
 type Kind int
 
 const (
-	Health   Kind = iota // the platform's health check
-	Form                 // a form post, kept in form_entries
-	Go                   // a redirect to Location
-	EditLink             // the Whisk bar's Edit page: find the page at EditPath, then redirect
-	Editor               // the editor and its API (Payload, while it runs beside the site)
-	Moved                // an old address of a moved website (redirects.json)
-	Static               // a file from public/
-	Sitemap              // sitemap.xml and its other addresses
-	Robots               // robots.txt
-	Page                 // a page drawn from the content
+	Health  Kind = iota // the platform's health check
+	Form                // a form post, kept in form_entries
+	Go                  // a redirect to Location
+	Editor              // the site editor and its API (/cms): Whisk's content engine
+	Moved               // an old address of a moved website (redirects.json)
+	Static              // a file from public/
+	Sitemap             // sitemap.xml and its other addresses
+	Robots              // robots.txt
+	Page                // a page drawn from the content
 )
 
 // Action is a decision: its kind and what that kind needs.
@@ -37,7 +36,6 @@ type Action struct {
 	Kind     Kind
 	Location string // Go
 	Form     string // Form
-	EditPath string // EditLink
 	Moved    Redirect
 	File     StaticFile
 }
@@ -48,23 +46,20 @@ type Site struct {
 	Sitemaps  []string
 	Public    string // the folder of files served as they are
 	Has       func(file string) bool
-	Editor    bool // whether the editor (Payload) runs beside the site and answers /cms
 }
 
 var (
-	editorPath = regexp.MustCompile(`^/(cms|_next)(/.*)?$`)
+	editorPath = regexp.MustCompile(`^/cms(/|$)`)
 	adminPath  = regexp.MustCompile(`^/app(/|$)`)
-	editorPage = regexp.MustCompile(`^/cms(/|$)`)
-	editorAPI  = regexp.MustCompile(`^/cms/api(/|$)`)
 	formPath   = regexp.MustCompile(`^/forms/([a-z0-9-]{1,40})$`)
 )
 
 // Decide is what the server does with a request, in order: health, a form post, the admin, the
-// Edit page link, the editor, an old address, a file, the sitemap, robots.txt, else a page.
+// editor (which decides itself who may do what, the Edit link's /cms/edit too), an old address, a
+// file, the sitemap, robots.txt, else a page.
 func Decide(s Site, r Request) Action {
 	read := r.Method == "GET" || r.Method == "HEAD"
 	staff := IsStaff(r.Headers)
-	here := r.Path + withMark(r.Query)
 	switch {
 	case r.Path == "/health/ready" || r.Path == "/health":
 		return Action{Kind: Health}
@@ -72,13 +67,7 @@ func Decide(s Site, r Request) Action {
 		return Action{Kind: Form, Form: FormName(r.Path)}
 	case adminPath.MatchString(r.Path):
 		return Action{Kind: Go, Location: pick(staff, "/cms", SignIn("/cms"))}
-	case r.Path == "/cms/edit" && !staff:
-		return Action{Kind: Go, Location: SignIn(here)}
-	case r.Path == "/cms/edit":
-		return Action{Kind: EditLink, EditPath: EditPath(r.Query)}
-	case s.Editor && editorPath.MatchString(r.Path) && IsEditorPage(r.Path) && !staff:
-		return Action{Kind: Go, Location: SignIn(here)}
-	case s.Editor && editorPath.MatchString(r.Path):
+	case editorPath.MatchString(r.Path):
 		return Action{Kind: Editor}
 	}
 	if !read {
@@ -99,12 +88,6 @@ func Decide(s Site, r Request) Action {
 	return Action{Kind: Page}
 }
 
-// IsEditorPage says whether a path is one of the editor's pages, which are for the team; its API
-// answers anyone and decides itself what each may read or change.
-func IsEditorPage(path string) bool {
-	return editorPage.MatchString(path) && !editorAPI.MatchString(path)
-}
-
 // IsStaff says whether Whisk's edge says this is the business's team (CONTRACT.md §4): it sets
 // these headers on every request and strips any a browser sends. Anyone but a guest may edit.
 func IsStaff(h map[string]string) bool {
@@ -121,25 +104,6 @@ func FormName(path string) string {
 		return m[1]
 	}
 	return ""
-}
-
-// EditPath is the page path the Edit link asks for, or the home page when it is not one.
-func EditPath(query string) string {
-	q, _ := url.ParseQuery(query)
-	p := q.Get("path")
-	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") || len(p) > 2000 || strings.ContainsAny(p, " \t\r\n#?\\") {
-		return "/"
-	}
-	return p
-}
-
-// EditorFor is where the editor opens for the page found at an Edit link's path: the page, or
-// the list of pages when none was found.
-func EditorFor(id string) string {
-	if id == "" {
-		return "/cms/collections/pages"
-	}
-	return "/cms/collections/pages/" + url.PathEscape(id)
 }
 
 func fields(list string) []string {

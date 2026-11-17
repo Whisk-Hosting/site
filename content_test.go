@@ -79,41 +79,6 @@ func TestAddresses(t *testing.T) {
 	if _, ok := OtherForm("/"); ok {
 		t.Error("/")
 	}
-	paths := func(p string) []string {
-		q := PageQuery(p)
-		out := []string{}
-		for i := 0; ; i++ {
-			v := q.Get("where[or][" + string(rune('0'+i)) + "][path][equals]")
-			if v == "" {
-				return out
-			}
-			out = append(out, v)
-		}
-	}
-	cases := map[string][]string{
-		"/":          {"/"},
-		"/about/":    {"/about/", "/about"},
-		"/caf%C3%A9": {"/caf%C3%A9", "/caf%C3%A9/", "/café", "/café/"},
-		"/100%":      {"/100%", "/100%/"},
-	}
-	for in, want := range cases {
-		if got := paths(in); !reflect.DeepEqual(got, want) {
-			t.Errorf("PageQuery(%q) = %v, want %v", in, got, want)
-		}
-	}
-	if PageQuery("/").Get("draft") != "true" {
-		t.Error("the Edit link finds drafts too")
-	}
-	titles := map[string]ContentPage{
-		"Shop":                {Path: "/", Title: "Home"},
-		"About | Shop":        {Path: "/about", Title: "About"},
-		"Old site's own name": {Path: "/x", Title: "X", SearchTitle: " Old site's own name "},
-	}
-	for want, p := range titles {
-		if got := PageTitle(p, "Shop"); got != want {
-			t.Errorf("PageTitle = %q, want %q", got, want)
-		}
-	}
 }
 
 // An engine answering in Payload's shape: published content is kept, drafts are asked each time
@@ -147,7 +112,7 @@ func TestHTTPContent(t *testing.T) {
 	}))
 	defer engine.Close()
 	now := time.Unix(1000, 0)
-	c := NewHTTPContent(engine.URL)
+	c := NewHTTPContent(engine.URL, false, "")
 	c.Now = func() time.Time { return now }
 	ctx := context.Background()
 
@@ -176,9 +141,6 @@ func TestHTTPContent(t *testing.T) {
 	if l, err := c.Listed(ctx, Asker{}); err != nil || len(l) != 1 {
 		t.Errorf("listed: %+v %v", l, err)
 	}
-	if id := c.FindForEdit(ctx, Asker{Identity: team}, "/about/"); id != "7" {
-		t.Errorf("edit: %q", id)
-	}
 
 	down.Store(1)
 	now = now.Add(time.Hour)
@@ -194,5 +156,33 @@ func TestHTTPContent(t *testing.T) {
 	now = now.Add(25 * time.Hour)
 	if _, _, err := c.PageAt(ctx, Asker{}, "/about/"); err == nil {
 		t.Error("a day-old page does not stand in")
+	}
+}
+
+func TestDraftsVia(t *testing.T) {
+	team := map[string]string{"host": "www.example.com", "cookie": "whisk_session=a", "x-whisk-user-id": "u1", "x-whisk-roles": "admin", "x-other": "x"}
+	cases := []struct {
+		name    string
+		atSite  bool
+		key     string
+		a       Asker
+		to      string
+		headers map[string]string
+		ok      bool
+	}{
+		{"published reads go to the engine as a visitor's", true, "k", Asker{Identity: team}, "http://engine", nil, true},
+		{"drafts from the engine the server started carry the edge's identity and its key", false, "k", Asker{Preview: true, Identity: team}, "http://engine", map[string]string{"x-whisk-user-id": "u1", "x-whisk-roles": "admin", "x-whisk-content-key": "k"}, true},
+		{"drafts from another engine carry the identity alone", false, "", Asker{Preview: true, Identity: team}, "http://engine", map[string]string{"x-whisk-user-id": "u1", "x-whisk-roles": "admin"}, true},
+		{"drafts from Whisk's engine go through the site with the cookie alone", true, "", Asker{Preview: true, Identity: team}, "https://www.example.com", map[string]string{"cookie": "whisk_session=a"}, true},
+		{"no cookie, no identity", true, "", Asker{Preview: true, Identity: map[string]string{"host": "www.example.com"}}, "https://www.example.com", map[string]string{}, true},
+		{"no host to ask", true, "", Asker{Preview: true, Identity: map[string]string{"cookie": "a"}}, "", nil, false},
+		{"a host that is not one", true, "", Asker{Preview: true, Identity: map[string]string{"host": "evil.example/x"}}, "", nil, false},
+		{"a host with a user", true, "", Asker{Preview: true, Identity: map[string]string{"host": "a@evil.example"}}, "", nil, false},
+	}
+	for _, c := range cases {
+		to, headers, ok := DraftsVia("http://engine", c.atSite, c.key, c.a)
+		if to != c.to || ok != c.ok || !reflect.DeepEqual(headers, c.headers) {
+			t.Errorf("%s: got %q %v %v, want %q %v %v", c.name, to, headers, ok, c.to, c.headers, c.ok)
+		}
 	}
 }

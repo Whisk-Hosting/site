@@ -11,11 +11,9 @@
     "resolveJsonModule": true
   },
   "include": [
-    "migrate.mjs",
     "scripts/**/*"
   ],
   "exclude": [
-    "node_modules",
-    "cms"
+    "node_modules"
   ]
 }

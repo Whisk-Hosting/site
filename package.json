@@ -2,28 +2,24 @@
   "name": "whisk-site",
   "version": "1.0.0",
   "private": true,
-  "description": "A business's website on Whisk: pages drawn by a Go server from the editor's content, in one app.",
+  "description": "A business's website on Whisk: pages drawn by a Go server from Whisk's content engine, in one app.",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "node scripts/site.mjs build",
     "start": "go run .",
     "dev": "node scripts/site.mjs dev",
-    "migrate": "node migrate.mjs",
+    "migrate": "go run . migrate",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "go test ./... && tsx --test cms/test/*.test.ts"
+    "test": "go test ./..."
   },
   "engines": {
     "node": ">=22"
-  },
-  "dependencies": {
-    "postgres": "3.4.9"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "sharp": "0.35.5",
     "subset-font": "2.9.0",
-    "tsx": "4.23.15",
     "typescript": "5.9.3"
   }
 }

@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -93,9 +94,7 @@ type Content interface {
 	PageAt(ctx context.Context, a Asker, path string) (ContentPage, bool, error)
 	Menus(ctx context.Context, a Asker) Menus
 	Listed(ctx context.Context, a Asker) ([]ContentPage, error)
-	FindForEdit(ctx context.Context, a Asker, path string) string
 	ProductPage(ctx context.Context, a Asker, handle string) (ProductPage, bool, error)
-	Find(ctx context.Context, a Asker, collection string, q url.Values) ([]ContentPage, error)
 }
 
 // identityHeaders are the headers passed on for a preview, so the engine shows drafts to the team only.
@@ -142,17 +141,51 @@ func (k Kept) Within(key string, now time.Time, age time.Duration) ([]byte, bool
 	return a.body, true
 }
 
-// HTTPContent reads the content engine at Base (/cms/api beneath it).
+// HTTPContent reads the content engine at Base (/cms/api beneath it). Drafts are read as the
+// person asking (DraftsVia): with the engine's Key beside the edge's identity when the server
+// started the engine, or, with DraftsAtSite (Whisk's engine on the node, which counts every read
+// from the app's network as a visitor's), through the site's own address with their cookie.
 type HTTPContent struct {
-	Base   string
-	Client *http.Client
-	Now    func() time.Time
-	kept   atomic.Pointer[Kept]
+	Base         string
+	DraftsAtSite bool
+	Key          string
+	Client       *http.Client
+	Now          func() time.Time
+	kept         atomic.Pointer[Kept]
 }
 
-// NewHTTPContent reads the content engine at base.
-func NewHTTPContent(base string) *HTTPContent {
-	c := &HTTPContent{Base: strings.TrimSuffix(base, "/"), Client: &http.Client{Timeout: 5 * time.Second}, Now: time.Now}
+// DraftsVia is where a read goes and the headers it carries: published reads to base with none;
+// drafts to base with the identity the edge set and the key of the engine the server started, or,
+// when the engine trusts only the edge (atSite), to the site's own https address with the
+// person's cookie alone. ok is false for a draft read at the site when the request names no host
+// to ask. Pure.
+func DraftsVia(base string, atSite bool, key string, a Asker) (to string, headers map[string]string, ok bool) {
+	switch {
+	case !a.Preview:
+		return base, nil, true
+	case !atSite:
+		h := map[string]string{}
+		for _, k := range identityHeaders {
+			if v := a.Identity[k]; v != "" {
+				h[k] = v
+			}
+		}
+		if key != "" {
+			h[strings.ToLower(contentKeyHeader)] = key
+		}
+		return base, h, true
+	}
+	host := a.Identity["host"]
+	if host == "" || strings.ContainsAny(host, "/@?#\\ ") {
+		return "", nil, false
+	}
+	return "https://" + host, pick(a.Identity["cookie"] != "", map[string]string{"cookie": a.Identity["cookie"]}, map[string]string{}), true
+}
+
+// NewHTTPContent reads the content engine at base: drafts through the site when atSite, else
+// with the key of the engine the server started ("" for none).
+func NewHTTPContent(base string, atSite bool, key string) *HTTPContent {
+	c := &HTTPContent{Base: strings.TrimSuffix(base, "/"), DraftsAtSite: atSite, Key: key, Client: &http.Client{Timeout: 5 * time.Second}, Now: time.Now}
 	c.kept.Store(&Kept{})
 	return c
 }
@@ -161,12 +194,16 @@ func (c *HTTPContent) ask(ctx context.Context, a Asker, p string, q url.Values, 
 	if a.Preview {
 		q.Set("draft", "true")
 	}
-	u := c.Base + "/cms/api/" + p + "?" + q.Encode()
+	base, headers, ok := DraftsVia(c.Base, c.DraftsAtSite, c.Key, a)
+	if !ok {
+		return errors.New("a draft was asked for with no site address to ask it at")
+	}
+	u := base + "/cms/api/" + p + "?" + q.Encode()
 	now := c.Now()
 	if body, ok := c.kept.Load().Within(u, now, fresh); ok && !a.Preview {
 		return json.Unmarshal(body, into)
 	}
-	body, err := c.fetch(ctx, a, u)
+	body, err := c.fetch(ctx, headers, u)
 	if err != nil {
 		if old, ok := c.kept.Load().Within(u, now, stale); ok && !a.Preview {
 			return json.Unmarshal(old, into)
@@ -185,7 +222,7 @@ func (c *HTTPContent) ask(ctx context.Context, a Asker, p string, q url.Values, 
 	return json.Unmarshal(body, into)
 }
 
-func (c *HTTPContent) fetch(ctx context.Context, a Asker, u string) ([]byte, error) {
+func (c *HTTPContent) fetch(ctx context.Context, headers map[string]string, u string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
@@ -193,12 +230,8 @@ func (c *HTTPContent) fetch(ctx context.Context, a Asker, u string) ([]byte, err
 		return nil, err
 	}
 	req.Header.Set("accept", "application/json")
-	if a.Preview {
-		for _, h := range identityHeaders {
-			if v := a.Identity[h]; v != "" {
-				req.Header.Set(h, v)
-			}
-		}
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 	res, err := c.Client.Do(req)
 	if err != nil {
@@ -269,18 +302,6 @@ func (c *HTTPContent) Listed(ctx context.Context, a Asker) ([]ContentPage, error
 	return ListedForSite(all, a.Market), nil
 }
 
-// FindForEdit is the id of the page, published or draft, that a path shows, asked as the person
-// here; "" when none has it or the engine cannot answer.
-func (c *HTTPContent) FindForEdit(ctx context.Context, a Asker, p string) string {
-	var got list[struct {
-		ID json.Number `json:"id"`
-	}]
-	if c.ask(ctx, Asker{Preview: true, Identity: a.Identity}, "pages", PageQuery(p), &got) != nil || len(got.Docs) == 0 {
-		return ""
-	}
-	return got.Docs[0].ID.String()
-}
-
 // ProductPage is a product's own page in the editor, when it has one.
 func (c *HTTPContent) ProductPage(ctx context.Context, a Asker, handle string) (ProductPage, bool, error) {
 	var got list[ProductPage]
@@ -291,16 +312,6 @@ func (c *HTTPContent) ProductPage(ctx context.Context, a Asker, handle string) (
 		return ProductPage{}, false, nil
 	}
 	return got.Docs[0], true, nil
-}
-
-// Find is the documents of a collection a query names, asked as the person here with drafts (the
-// Edit link's search).
-func (c *HTTPContent) Find(ctx context.Context, a Asker, collection string, q url.Values) ([]ContentPage, error) {
-	var got list[ContentPage]
-	if err := c.ask(ctx, Asker{Preview: true, Identity: a.Identity, Market: a.Market}, collection, q, &got); err != nil {
-		return nil, err
-	}
-	return got.Docs, nil
 }
 
 // ForSite is, of the pages at one address, the one a market's site shows: its own, else the one
@@ -342,27 +353,6 @@ func OtherForm(p string) (string, bool) {
 func EncodedForm(p string) (string, bool) {
 	enc := (&url.URL{Path: p}).EscapedPath()
 	return enc, enc != p
-}
-
-// PageQuery is the engine query that finds the page, draft or published, for an Edit link's path,
-// in either form of the address and as written or decoded.
-func PageQuery(p string) url.Values {
-	forms := func(s string) []string {
-		if s == "/" {
-			return []string{s}
-		}
-		other, _ := OtherForm(s)
-		return []string{s, other}
-	}
-	decoded, err := url.PathUnescape(p)
-	if err != nil {
-		decoded = p
-	}
-	q := url.Values{"depth": {"0"}, "limit": {"1"}, "draft": {"true"}}
-	for i, f := range uniq(append(forms(p), forms(decoded)...)) {
-		q.Set(fmt.Sprintf("where[or][%d][path][equals]", i), f)
-	}
-	return q
 }
 
 // PageTitle is a page's whole <title>: the one given for search results, or its title and the
