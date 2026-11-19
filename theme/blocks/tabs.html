@@ -1,0 +1,15 @@
+{{- /* Words under tabs: one shows at a time, chosen by its name. Without styles every tab's words
+show in turn under its name. */ -}}
+{{- $id := str .B.id -}}
+{{with list .B.items}}
+<section class="block tabs">
+  {{with $.B.heading}}<h2>{{.}}</h2>{{end}}
+  <div class="tab-set">
+    {{range $i, $t := .}}
+    <input type="radio" class="tab-pick" name="tabs-{{$id}}" id="tab-{{$id}}-{{$i}}"{{if eq $i 0}} checked{{end}}>
+    <label class="tab-name" for="tab-{{$id}}-{{$i}}">{{$t.heading}}</label>
+    <div class="tab-words prose">{{html $t.words_html}}</div>
+    {{end}}
+  </div>
+</section>
+{{end}}

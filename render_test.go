@@ -53,7 +53,7 @@ func TestBlocks(t *testing.T) {
 		{"blockType":"unknown","heading":"never drawn"},
 		{"blockType":"../site","heading":"never drawn"}
 	]}`)
-	out := render(t, PageView("Website", "https://example.com", Request{Path: "/"}, Menus{Name: "Maple Street", Header: []Link{{Label: "Menu", URL: "/menu"}}}, p, true, false, 2026))
+	out := render(t, PageView("Website", "https://example.com", Request{Path: "/"}, Menus{Name: "Maple Street", Header: []MenuItem{{Label: "Menu", URL: "/menu"}, {Label: "About", URL: "#", Children: []MenuItem{{Label: "Team", URL: "/team"}}}}}, p, true, false, 2026))
 	for _, want := range []string{
 		"<title>Maple Street</title>",
 		`<link rel="canonical" href="https://example.com/">`,
@@ -126,5 +126,65 @@ func TestPictures(t *testing.T) {
 	}
 	if Lines("a\r\n\n b ")[1] != "b" || string(Tel("+1 (555) 010")) != "tel:+1555010" {
 		t.Error("lines and tel")
+	}
+}
+
+// The blocks every site has since sites had their own, each drawn from the fields the editor keeps.
+func TestNewerBlocks(t *testing.T) {
+	p := pageFrom(t, `{"id":1,"path":"/","title":"Home","layout":[
+		{"blockType":"banner","heading":"Our services","text":"On site, every week","image":{"url":"/.whisk/img/5","alt":"Workshop"}},
+		{"blockType":"split","heading":"Who we are","words_html":"<p>Since <em>1995</em>.</p>","image":{"url":"/.whisk/img/6","alt":"Team"},"side":"left","link":{"label":"Meet us","url":"/team"}},
+		{"blockType":"cta","heading":"Ready to start?","text":"We answer within a day.","link":{"label":"Get a quote","url":"/quote"},"style":"accent"},
+		{"blockType":"stats","heading":"In numbers","items":[{"value":"30+","label":"Years"},{"value":"98%","label":"On time"}]},
+		{"blockType":"steps","heading":"How it works","items":[{"heading":"Call","text":"Tell us what you need"},{"heading":"Visit"}]},
+		{"blockType":"gallery","heading":"Our work","items":[{"image":{"url":"/.whisk/img/7","alt":"A job"},"caption":"Downtown"},{"image":12}]},
+		{"blockType":"video","heading":"A tour","url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3"},
+		{"blockType":"video","url":"javascript:alert(1)"},
+		{"blockType":"tabs","id":"t1","items":[{"heading":"Features","words_html":"<p>Fast</p>"},{"heading":"Specs","words_html":"<p>12 kg</p>"}]},
+		{"blockType":"pricing","heading":"Prices","items":[{"name":"Basic","price":"$20","period":"month","features":"One site\nEmail support","link":{"label":"Choose","url":"/buy"}},{"name":"Plus","price":"$40","featured":true}]},
+		{"blockType":"table","heading":"Sizes","data":"Size | Width | <b>Weight</b>\nSmall | 20 cm | 1 kg\n\nLarge | 40 cm | 3 kg","caption":"All sizes"}
+	]}`)
+	out := render(t, PageView("Website", "https://example.com", Request{Path: "/"}, Menus{Name: "Maple Street", Header: []MenuItem{{Label: "About", URL: "/about", Children: []MenuItem{{Label: "Team", URL: "/team", Children: []MenuItem{{Label: "Board", URL: "/board"}}}}}}}, p, true, false, 2026))
+	for _, want := range []string{
+		`<section class="block banner has-picture">`, "<h1>Our services</h1>",
+		`<section class="block split picture-left">`, "<p>Since <em>1995</em>.</p>", `<a class="button" href="/team">Meet us</a>`,
+		`<section class="block cta cta-accent">`, `<a class="button" href="/quote">Get a quote</a>`,
+		"<div><dt>Years</dt><dd>30&#43;</dd></div>",
+		`<span class="step-number" aria-hidden="true">2</span>`,
+		`<figcaption class="muted">Downtown</figcaption>`,
+		`src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"`,
+		`name="tabs-t1" id="tab-t1-0" checked>`, `<label class="tab-name" for="tab-t1-1">Specs</label>`, "<p>12 kg</p>",
+		`<article class="plan featured">`, "<li>Email support</li>", `<span class="muted">/ month</span>`,
+		`<th scope="col">&lt;b&gt;Weight&lt;/b&gt;</th>`, "<td>3 kg</td>", `<caption class="muted">All sizes</caption>`,
+		`<details class="sub"><summary>About</summary><div class="sub-links"><a href="/about">About</a><details class="sub"><summary>Team</summary>`, `<a href="/board">Board</a>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+	for _, never := range []string{"javascript:", "<no value>", "<b>Weight"} {
+		if strings.Contains(out, never) {
+			t.Errorf("drew %s", never)
+		}
+	}
+	if n := strings.Count(out, "<tr>"); n != 3 {
+		t.Errorf("the table has %d rows, want a heading row and two", n)
+	}
+}
+
+func TestEmbed(t *testing.T) {
+	for in, want := range map[string]Video{
+		"https://youtu.be/dQw4w9WgXcQ":               {"frame", "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"},
+		"https://www.youtube.com/shorts/dQw4w9WgXcQ": {"frame", "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"},
+		"https://vimeo.com/76979871":                 {"frame", "https://player.vimeo.com/video/76979871?dnt=1"},
+		"/.whisk/files/tour.mp4":                     {"file", "/.whisk/files/tour.mp4"},
+		"https://cdn.example.com/a.webm?x=1":         {"file", "https://cdn.example.com/a.webm?x=1"},
+		"http://youtu.be/dQw4w9WgXcQ":                {},
+		"https://evil.example/youtube.com/watch?v=x": {},
+		"javascript:alert(1)//.mp4":                  {},
+	} {
+		if got := Embed(in); got != want {
+			t.Errorf("Embed(%q) = %+v, want %+v", in, got, want)
+		}
 	}
 }

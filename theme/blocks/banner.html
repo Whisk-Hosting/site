@@ -1,0 +1,8 @@
+{{- /* A band at the top of a page: its heading and a line, over a darkened picture when it has one. */ -}}
+<section class="block banner{{if .B.image}} has-picture{{end}}">
+  {{img .B.image 1600 .First "banner-bg"}}
+  <div class="banner-words">
+    {{if .First}}<h1>{{.B.heading}}</h1>{{else}}<h2>{{.B.heading}}</h2>{{end}}
+    {{with .B.text}}<p class="lead">{{.}}</p>{{end}}
+  </div>
+</section>

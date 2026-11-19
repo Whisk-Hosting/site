@@ -1,0 +1,15 @@
+{{- /* Plans side by side: a name, a price and what it includes, one a line; one may stand out. */ -}}
+<section class="block pricing">
+  {{with .B.heading}}<h2>{{.}}</h2>{{end}}
+  {{with .B.intro}}<p class="lead">{{.}}</p>{{end}}
+  <div class="plans">
+    {{range list .B.items}}
+    <article class="plan{{if .featured}} featured{{end}}">
+      <h3>{{.name}}</h3>
+      <p class="price"><strong>{{.price}}</strong>{{with .period}} <span class="muted">/ {{.}}</span>{{end}}</p>
+      {{with lines .features}}<ul>{{range .}}<li>{{.}}</li>{{end}}</ul>{{end}}
+      {{with .link}}{{if and .url .label}}<a class="button" href="{{.url}}">{{.label}}</a>{{end}}{{end}}
+    </article>
+    {{end}}
+  </div>
+</section>

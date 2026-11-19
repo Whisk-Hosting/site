@@ -1,0 +1,12 @@
+{{- /* Pictures in a grid; each opens at full size. */ -}}
+<section class="block gallery">
+  {{with .B.heading}}<h2>{{.}}</h2>{{end}}
+  <ul>
+    {{range list .B.items}}{{$m := media .image}}{{if $m.URL}}
+    <li><figure>
+      <a href="{{$m.URL}}">{{img .image 480 false ""}}</a>
+      {{with .caption}}<figcaption class="muted">{{.}}</figcaption>{{end}}
+    </figure></li>
+    {{end}}{{end}}
+  </ul>
+</section>

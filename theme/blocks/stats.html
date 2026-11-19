@@ -1,0 +1,7 @@
+{{- /* Numbers that make the case, each with what it counts. */ -}}
+<section class="block stats">
+  {{with .B.heading}}<h2>{{.}}</h2>{{end}}
+  <dl>
+    {{range list .B.items}}<div><dt>{{.label}}</dt><dd>{{.value}}</dd></div>{{end}}
+  </dl>
+</section>

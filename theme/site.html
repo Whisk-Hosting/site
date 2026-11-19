@@ -28,7 +28,7 @@ menus, and the page's blocks between them, each drawn by blocks/<blockType>.html
         <a class="brand" href="/">{{.Name}}</a>
         {{with .Menus.Header}}
         <nav class="menu" aria-label="Menu">
-          {{range .}}<a href="{{.URL}}">{{.Label}}</a>{{end}}
+          {{range .}}{{template "menu-item" .}}{{end}}
         </nav>
         {{end}}
       </div>
@@ -56,3 +56,7 @@ menus, and the page's blocks between them, each drawn by blocks/<blockType>.html
     </footer>
   </body>
 </html>
+
+{{- /* A header link, or, when links sit under it, a button that opens them: the link itself first
+when it goes somewhere, then the ones under it, which may hold their own. */ -}}
+{{define "menu-item"}}{{if .Children}}<details class="sub"><summary>{{.Label}}</summary><div class="sub-links">{{if and .URL (ne .URL "#")}}<a href="{{.URL}}">{{.Label}}</a>{{end}}{{range .Children}}{{template "menu-item" .}}{{end}}</div></details>{{else}}<a href="{{.URL}}">{{.Label}}</a>{{end}}{{end}}

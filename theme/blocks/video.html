@@ -1,0 +1,13 @@
+{{- /* A video: YouTube or Vimeo on their privacy-friendly players, or a file played in the page.
+An address that is neither draws nothing. */ -}}
+{{- $v := embed .B.url -}}
+{{if $v.Kind}}
+<figure class="block video">
+  {{with .B.heading}}<h2>{{.}}</h2>{{end}}
+  <div class="video-frame">
+    {{if eq $v.Kind "frame"}}<iframe src="{{$v.Src}}" title="{{or .B.heading .B.caption "Video"}}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+    {{else}}<video src="{{$v.Src}}" controls preload="metadata"></video>{{end}}
+  </div>
+  {{with .B.caption}}<figcaption class="muted">{{.}}</figcaption>{{end}}
+</figure>
+{{end}}

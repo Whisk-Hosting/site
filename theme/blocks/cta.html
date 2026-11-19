@@ -1,0 +1,8 @@
+{{- /* A call to action: a heading, a line and one button, bold in the site's accent or quiet. */ -}}
+<section class="block cta{{if ne (str .B.style) "plain"}} cta-accent{{end}}">
+  <div>
+    <h2>{{.B.heading}}</h2>
+    {{with .B.text}}<p>{{.}}</p>{{end}}
+  </div>
+  {{with .B.link}}{{if and .url .label}}<a class="button" href="{{.url}}">{{.label}}</a>{{end}}{{end}}
+</section>

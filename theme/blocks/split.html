@@ -1,0 +1,9 @@
+{{- /* Words beside a picture, the picture on the side the editor chose; stacked on a phone. */ -}}
+<section class="block split{{if eq (str .B.side) "left"}} picture-left{{end}}">
+  <div class="split-words">
+    {{with .B.heading}}{{if $.First}}<h1>{{.}}</h1>{{else}}<h2>{{.}}</h2>{{end}}{{end}}
+    {{with .B.words_html}}<div class="prose">{{html .}}</div>{{end}}
+    {{with .B.link}}{{if and .url .label}}<a class="button" href="{{.url}}">{{.label}}</a>{{end}}{{end}}
+  </div>
+  {{img .B.image 720 .First ""}}
+</section>

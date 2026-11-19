@@ -1,0 +1,14 @@
+{{- /* Steps in order, numbered, each with a picture when it has one. */ -}}
+<section class="block steps">
+  {{with .B.heading}}<h2>{{.}}</h2>{{end}}
+  <ol>
+    {{range $i, $s := list .B.items}}
+    <li>
+      {{img $s.image 320 false "step-picture"}}
+      <span class="step-number" aria-hidden="true">{{add $i 1}}</span>
+      <h3>{{$s.heading}}</h3>
+      {{with $s.text}}<p>{{.}}</p>{{end}}
+    </li>
+    {{end}}
+  </ol>
+</section>

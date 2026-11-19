@@ -1,0 +1,15 @@
+{{- /* A table typed one row a line, cells split by |; the first line is its heading row. It
+scrolls sideways on a narrow screen rather than squeezing. */ -}}
+{{- $rows := lines .B.data -}}
+{{with $rows}}
+<section class="block table">
+  {{with $.B.heading}}<h2>{{.}}</h2>{{end}}
+  <div class="table-scroll">
+    <table>
+      {{with $.B.caption}}<caption class="muted">{{.}}</caption>{{end}}
+      <thead><tr>{{range cells (index $rows 0)}}<th scope="col">{{.}}</th>{{end}}</tr></thead>
+      <tbody>{{range $i, $r := $rows}}{{if $i}}<tr>{{range cells $r}}<td>{{.}}</td>{{end}}</tr>{{end}}{{end}}</tbody>
+    </table>
+  </div>
+</section>
+{{end}}

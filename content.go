@@ -51,10 +51,17 @@ type Link struct {
 	URL   string `json:"url"`
 }
 
+// MenuItem is a header link and the links under it, which the editor nests up to three deep.
+type MenuItem struct {
+	Label    string     `json:"label"`
+	URL      string     `json:"url"`
+	Children []MenuItem `json:"children"`
+}
+
 // Menus are the site's name, header menu, footer columns and note.
 type Menus struct {
-	Name    string `json:"name"`
-	Header  []Link `json:"header"`
+	Name    string     `json:"name"`
+	Header  []MenuItem `json:"header"`
 	Columns []struct {
 		Heading string `json:"heading"`
 		Links   []Link `json:"links"`

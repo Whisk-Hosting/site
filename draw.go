@@ -131,8 +131,43 @@ func Funcs(draw func(name string, data any) (template.HTML, error)) template.Fun
 		"tel":   Tel,
 		"str":   str,
 		"list":  asList,
+		"embed": Embed,
+		"cells": Cells,
+		"add":   func(a, b int) int { return a + b },
 	}
 }
+
+// Video is how a video block's address is shown: a player embedded from YouTube or Vimeo, or a
+// video file played in the page; Kind is "" for an address that is neither.
+type Video struct {
+	Kind string // "frame" or "file"
+	Src  string
+}
+
+var (
+	youTube = regexp.MustCompile(`^https://(?:www\.|m\.)?(?:youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{6,20})`)
+	vimeo   = regexp.MustCompile(`^https://(?:www\.|player\.)?vimeo\.com/(?:video/)?([0-9]{4,12})`)
+	file    = regexp.MustCompile(`^(?:https://[^\s"'<>]+|/[^\s"'<>]*)\.(?:mp4|webm|mov)(?:\?[^\s"'<>]*)?$`)
+)
+
+// Embed is a video block's address as a player: YouTube and Vimeo by the video's id on their
+// privacy-friendly players, a file by its own address (https or this site's). Pure.
+func Embed(v any) Video {
+	u := strings.TrimSpace(str(v))
+	if m := youTube.FindStringSubmatch(u); m != nil {
+		return Video{"frame", "https://www.youtube-nocookie.com/embed/" + m[1]}
+	}
+	if m := vimeo.FindStringSubmatch(u); m != nil {
+		return Video{"frame", "https://player.vimeo.com/video/" + m[1] + "?dnt=1"}
+	}
+	if file.MatchString(u) {
+		return Video{"file", u}
+	}
+	return Video{}
+}
+
+// Cells are a table line's cells, split by |, each trimmed. Pure.
+func Cells(line string) []string { return mapOf(strings.Split(line, "|"), strings.TrimSpace) }
 
 var blockName = regexp.MustCompile(`^[A-Za-z0-9_-]{1,60}$`)
 
